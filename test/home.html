@@ -1,4 +1,3 @@
-<ht<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -210,7 +209,7 @@
                     baseUrl: 'https://supapay.ecgedms.com',
                     environment: 'sandbox',
                     merchantName: 'Fastify E-Shop',
-                    pollInterval: 5000 // Poll every 5 seconds
+                    pollInterval: 5000
                 });
                 await sdk.showPaymentModal({
                     amount: parseFloat(finalAmount.toFixed(2)),

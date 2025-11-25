@@ -57,19 +57,73 @@ export declare class MMPaySDK {
     private pollIntervalId;
     private onCompleteCallback;
     private overlayElement;
+    private pendingApiResponse;
+    private pendingPaymentPayload;
     private readonly QR_SIZE;
     constructor(publishableKey: string, options?: SDKOptions);
+    /**
+     * _callApi
+     * @param endpoint
+     * @param data
+     * @returns
+     */
     private _callApi;
+    /**
+     * createPaymentRequest
+     * @param {PaymentData} payload
+     * @returns
+     */
     createPaymentRequest(payload: PaymentData): Promise<CreatePaymentResponse>;
+    /**
+     * _createAndRenderModal
+     * @param {string} contentHtml
+     * @param isTerminal
+     * @returns
+     */
+    private _createAndRenderModal;
+    /**
+     * showPaymentModal
+     * @param {PaymentData} payload
+     * @param {Function} onComplete
+     */
     showPaymentModal(payload: PaymentData, onComplete: (result: PolliongResult) => void): Promise<void>;
+    /**
+     * _renderQrModalContent
+     * @param {CreatePaymentResponse} apiResponse
+     * @param {PaymentData} payload
+     * @param {string} merchantName
+     */
+    private _renderQrModalContent;
+    /**
+     * _showTerminalMessage
+     * @param {string} orderId
+     * @param {string} status
+     * @param {string} message
+     */
     private _showTerminalMessage;
+    /**
+     * _showCancelConfirmationModal
+     */
+    private _showCancelConfirmationModal;
+    /**
+     * _reRenderPendingModalInstance
+     */
+    private _reRenderPendingModalInstance;
+    /**
+     * Cleans up the modal and stops polling.
+     * @param restoreBodyScroll
+     */
     private _cleanupModal;
+    /**
+     * _injectQrScript
+     * @param {string} qrData
+     * @param {string} qrCanvasId
+     */
     private _injectQrScript;
-    private _renderModalContent;
     /**
      * _startPolling
-     * @param _id
-     * @param onComplete
+     * @param {string} _id
+     * @param {Function} onComplete
      */
     private _startPolling;
 }
