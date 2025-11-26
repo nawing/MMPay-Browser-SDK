@@ -169,6 +169,7 @@ export class MMPaySDK {
     this._createAndRenderModal(initialContent, false);
     this.onCompleteCallback = onComplete;
     try {
+      payload.nonce = new Date().getTime().toString() + '_mmp';
       const tokenResponse = await this.createTokenRequest(payload);
       this.tokenKey = tokenResponse.token as string;
       const apiResponse = await this.createPaymentRequest(payload);
