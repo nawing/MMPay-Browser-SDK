@@ -77,7 +77,7 @@ export class MMPaySDK {
   private pendingApiResponse: ICreatePaymentResponse | null = null;
   private pendingPaymentPayload: ICreatePaymentRequestParams | null = null;
 
-  private readonly QR_SIZE: number = 300;
+  private readonly QR_SIZE: number = 290;
 
   /**
    * constructor
@@ -360,7 +360,7 @@ export class MMPaySDK {
    */
   private _renderQrModalContent(apiResponse: ICreatePaymentResponse, payload: ICreatePaymentRequestParams, merchantName: string): void {
     const qrData = apiResponse.qr;
-    const amountDisplay = `${apiResponse.amount.toFixed(2)} ${apiResponse.currency}`;
+    const amountDisplay = `${apiResponse.amount.toFixed(2)} MMK`;
     const qrCanvasId = 'mmpayQrCanvas';
     const orderId = payload.orderId;
     window.MMPayDownloadQR = function () {

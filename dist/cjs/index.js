@@ -13,7 +13,7 @@ class MMPaySDK {
         this.overlayElement = null;
         this.pendingApiResponse = null;
         this.pendingPaymentPayload = null;
-        this.QR_SIZE = 300;
+        this.QR_SIZE = 290;
         if (!publishableKey) {
             throw new Error("A Publishable Key is required to initialize [MMPaySDK].");
         }
@@ -283,7 +283,7 @@ class MMPaySDK {
      */
     _renderQrModalContent(apiResponse, payload, merchantName) {
         const qrData = apiResponse.qr;
-        const amountDisplay = `${apiResponse.amount.toFixed(2)} ${apiResponse.currency}`;
+        const amountDisplay = `${apiResponse.amount.toFixed(2)} MMK`;
         const qrCanvasId = 'mmpayQrCanvas';
         const orderId = payload.orderId;
         window.MMPayDownloadQR = function () {
