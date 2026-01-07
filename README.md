@@ -89,11 +89,91 @@ MMPayApp.createPayment({
     amount: 50000,
     orderId: 'ORD-' + new Date().getTime(),
     callbackUrl: 'https://yoursite.com/confirmation' // Optional [Default callback input in our console will be called if no specified]
-}, (result) => {
+}).then((result) => {
     if (result.qr) {
         console.log('Transaction ID: ' + result.qr);
-    } else {
-        console.error('Failed:');
     }
 });
+```
+
+
+
+
+
+### 3. Angular Framework Implementation
+
+#### **Example Implementation**
+```typescript
+import {Injectable} from '@angular/core';
+
+interface PayResponse {
+    _id: string;
+    amount: number;
+    orderId: string;
+    currency?: string;
+    transactionRefId: string;
+    qr: string;
+}
+
+interface ModalResponse {
+    success: boolean,
+    transaction: {
+        orderId: string;
+        transactionRefId: string;
+        status: 'PENDING' | 'SUCCESS' | 'FAILED' | 'EXPIRED';
+    }
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class MMPayService {
+    mmpay: any;
+    constructor() {
+        const MMPaySDK = (window as any).MMPaySDK;
+        if (!MMPaySDK) {
+            console.error('SDK not loaded attached to window');
+            return;
+        }
+        this.mmpay = new MMPaySDK('pk_test_123', {
+            baseUrl:  'https://xxx.myanmyanpay.com', // Sign up with us and ask our tea
+            environment: 'sandbox',
+            merchantName: 'Test Shop'
+        });
+    }
+    /**
+     * @param {number} amount
+     * @param {string} orderId
+     * @param {string} callbackUrl
+     */
+    modalPay(amount: number, orderId: string, callbackUrl?: string) {
+        this.mmpay.showPaymentModal({
+            amount,
+            orderId,
+            callbackUrl,
+        }, (result: ModalResponse) => {
+            if (result.success) {
+                console.log('Redirect Some where');
+            }
+        });
+    }
+    /**
+     * @param {number} amount
+     * @param {string} orderId
+     * @param {string} callbackUrl
+     */
+    pay(amount: number, orderId: string, callbackUrl?: string) {
+        this.mmpay.createPayment({
+            amount,
+            orderId,
+            callbackUrl,
+        })
+        .then((result: PayResponse) => {
+            if (result.qr) {
+                console.log('Transaction ID: ' + result.qr);
+            }
+        });
+    }
+}
+
 ```

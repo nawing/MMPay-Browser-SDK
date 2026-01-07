@@ -2,11 +2,15 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MMPaySDK = void 0;
 class MMPaySDK {
+    /**
+     * constructor
+     * @param publishableKey
+     * @param options
+     */
     constructor(publishableKey, options = {}) {
         this.pollIntervalId = undefined;
         this.onCompleteCallback = null;
         this.overlayElement = null;
-        // Properties to store pending data for re-rendering after cancel attempt
         this.pendingApiResponse = null;
         this.pendingPaymentPayload = null;
         this.QR_SIZE = 300;
@@ -17,7 +21,7 @@ class MMPaySDK {
         this.environment = options.environment || 'production';
         this.baseUrl = options.baseUrl || 'https://api.mm-pay.com';
         this.merchantName = options.merchantName || 'Your Merchant';
-        this.POLL_INTERVAL_MS = options.pollInterval || 3000;
+        this.POLL_INTERVAL_MS = options.pollInterval || 5000;
     }
     /**
      * _callApi
@@ -49,8 +53,8 @@ class MMPaySDK {
         return response.json();
     }
     /**
-     * createTokenRequest
-     * @param {ICreateTokenRequest} payload
+     * _callApiTokenRequest
+     * @param {ICreateTokenRequestParams} payload
      * @param {number} payload.amount
      * @param {string} payload.currency
      * @param {string} payload.orderId
@@ -58,7 +62,7 @@ class MMPaySDK {
      * @param {string} payload.callbackUrl
      * @returns {Promise<ICreateTokenResponse>}
      */
-    async createTokenRequest(payload) {
+    async _callApiTokenRequest(payload) {
         try {
             const endpoint = this.environment === 'sandbox'
                 ? '/xpayments/sandbox-token-request'
@@ -71,8 +75,8 @@ class MMPaySDK {
         }
     }
     /**
-     * createPaymentRequest
-     * @param {ICreatePaymentRequest} payload
+     * _callApiPaymentRequest
+     * @param {ICreatePaymentRequestParams} payload
      * @param {number} payload.amount
      * @param {string} payload.currency
      * @param {string} payload.orderId
@@ -80,7 +84,7 @@ class MMPaySDK {
      * @param {string} payload.callbackUrl
      * @returns {Promise<ICreatePaymentResponse>}
      */
-    async createPaymentRequest(payload) {
+    async _callApiPaymentRequest(payload) {
         try {
             const endpoint = this.environment === 'sandbox'
                 ? '/xpayments/sandbox-payment-create'
@@ -93,19 +97,55 @@ class MMPaySDK {
         }
     }
     /**
+     * createPayment
+     * @param {ICorePayParams} params
+     * @param {number} params.amount
+     * @param {string} params.orderId
+     * @param {string} params.callbackUrl
+     * @returns {Promise<ICreatePaymentResponse>}
+     */
+    async createPayment(params) {
+        const payload = {
+            amount: params.amount,
+            orderId: params.orderId,
+            callbackUrl: params.callbackUrl,
+            currency: 'MMK',
+            nonce: new Date().getTime().toString() + '_mmp'
+        };
+        try {
+            const tokenResponse = await this._callApiTokenRequest(payload);
+            this.tokenKey = tokenResponse.token;
+            const apiResponse = await this._callApiPaymentRequest(payload);
+            return apiResponse;
+        }
+        catch (error) {
+            console.error("Payment request failed:", error);
+            throw error;
+        }
+    }
+    /**
      * showPaymentModal
-     * @param {CreatePaymentRequest} payload
+     * @param {ICorePayParams} params
+     * @param {number} params.amount
+     * @param {string} params.orderId
+     * @param {string} params.callbackUrl
      * @param {Function} onComplete
      */
-    async showPaymentModal(payload, onComplete) {
+    async showPaymentModal(params, onComplete) {
         const initialContent = `<div class="mmpay-overlay-content"><div style="text-align: center; color: #fff;">ငွေပေးချေမှု စတင်နေသည်...</div></div>`;
         this._createAndRenderModal(initialContent, false);
         this.onCompleteCallback = onComplete;
+        const payload = {
+            amount: params.amount,
+            orderId: params.orderId,
+            callbackUrl: params.callbackUrl,
+            currency: 'MMK',
+            nonce: new Date().getTime().toString() + '_mmp'
+        };
         try {
-            payload.nonce = new Date().getTime().toString() + '_mmp';
-            const tokenResponse = await this.createTokenRequest(payload);
+            const tokenResponse = await this._callApiTokenRequest(payload);
             this.tokenKey = tokenResponse.token;
-            const apiResponse = await this.createPaymentRequest(payload);
+            const apiResponse = await this._callApiPaymentRequest(payload);
             if (apiResponse && apiResponse.qr && apiResponse.transactionRefId) {
                 this.pendingApiResponse = apiResponse;
                 this.pendingPaymentPayload = payload;
@@ -136,7 +176,6 @@ class MMPaySDK {
         const style = document.createElement('style');
         style.innerHTML = `
           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Padauk:wght@400;700&display=swap');
-
           #mmpay-full-modal {
             position: fixed;
             top: 0;
@@ -420,7 +459,7 @@ class MMPaySDK {
     }
     /**
      * Cleans up the modal and stops polling.
-     * @param restoreBodyScroll
+     * @param {boolean} restoreBodyScroll
      */
     _cleanupModal(restoreBodyScroll) {
         if (this.pollIntervalId !== undefined) {

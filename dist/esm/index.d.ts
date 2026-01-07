@@ -1,6 +1,11 @@
-export interface ICreatePaymentRequest {
+export interface ICorePayParams {
     amount: number;
-    currency: string;
+    orderId: string;
+    callbackUrl?: string;
+}
+export interface ICreatePaymentRequestParams {
+    amount: number;
+    currency?: string;
     orderId: string;
     callbackUrl?: string;
     nonce?: string;
@@ -9,14 +14,13 @@ export interface ICreatePaymentResponse {
     _id: string;
     amount: number;
     orderId: string;
-    currency: string;
+    currency?: string;
     transactionRefId: string;
     qr: string;
-    url: string;
 }
-export interface ICreateTokenRequest {
+export interface ICreateTokenRequestParams {
     amount: number;
-    currency: string;
+    currency?: string;
     orderId: string;
     callbackUrl?: string;
     nonce?: string;
@@ -27,7 +31,7 @@ export interface ICreateTokenResponse {
 }
 export interface IPollingRequest {
     amount: number;
-    currency: string;
+    currency?: string;
     orderId: string;
     callbackUrl?: string;
     nonce?: string;
@@ -60,6 +64,11 @@ export declare class MMPaySDK {
     private pendingApiResponse;
     private pendingPaymentPayload;
     private readonly QR_SIZE;
+    /**
+     * constructor
+     * @param publishableKey
+     * @param options
+     */
     constructor(publishableKey: string, options?: SDKOptions);
     /**
      * _callApi
@@ -69,8 +78,8 @@ export declare class MMPaySDK {
      */
     private _callApi;
     /**
-     * createTokenRequest
-     * @param {ICreateTokenRequest} payload
+     * _callApiTokenRequest
+     * @param {ICreateTokenRequestParams} payload
      * @param {number} payload.amount
      * @param {string} payload.currency
      * @param {string} payload.orderId
@@ -78,10 +87,10 @@ export declare class MMPaySDK {
      * @param {string} payload.callbackUrl
      * @returns {Promise<ICreateTokenResponse>}
      */
-    createTokenRequest(payload: ICreateTokenRequest): Promise<ICreateTokenResponse>;
+    private _callApiTokenRequest;
     /**
-     * createPaymentRequest
-     * @param {ICreatePaymentRequest} payload
+     * _callApiPaymentRequest
+     * @param {ICreatePaymentRequestParams} payload
      * @param {number} payload.amount
      * @param {string} payload.currency
      * @param {string} payload.orderId
@@ -89,13 +98,25 @@ export declare class MMPaySDK {
      * @param {string} payload.callbackUrl
      * @returns {Promise<ICreatePaymentResponse>}
      */
-    createPaymentRequest(payload: ICreatePaymentRequest): Promise<ICreatePaymentResponse>;
+    private _callApiPaymentRequest;
+    /**
+     * createPayment
+     * @param {ICorePayParams} params
+     * @param {number} params.amount
+     * @param {string} params.orderId
+     * @param {string} params.callbackUrl
+     * @returns {Promise<ICreatePaymentResponse>}
+     */
+    createPayment(params: ICorePayParams): Promise<ICreatePaymentResponse>;
     /**
      * showPaymentModal
-     * @param {CreatePaymentRequest} payload
+     * @param {ICorePayParams} params
+     * @param {number} params.amount
+     * @param {string} params.orderId
+     * @param {string} params.callbackUrl
      * @param {Function} onComplete
      */
-    showPaymentModal(payload: ICreatePaymentRequest, onComplete: (result: PolliongResult) => void): Promise<void>;
+    showPaymentModal(params: ICorePayParams, onComplete: (result: PolliongResult) => void): Promise<void>;
     /**
      * _createAndRenderModal
      * @param {string} contentHtml
@@ -127,7 +148,7 @@ export declare class MMPaySDK {
     private _reRenderPendingModalInstance;
     /**
      * Cleans up the modal and stops polling.
-     * @param restoreBodyScroll
+     * @param {boolean} restoreBodyScroll
      */
     private _cleanupModal;
     /**
