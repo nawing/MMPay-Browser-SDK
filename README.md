@@ -20,7 +20,7 @@ The `MMPaySDK` class provides two distinct methods to suit different integration
 #### **Example Implementation**
 ```javascript
 const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
-    baseUrl:  'https://xxx.myanmyanpay.com',
+    baseUrl:  'https://xxx.myanmyanpay.com', // Sign up with us and ask our team
     environment:  'sandbox',
     merchantName:  'Your Shop Name',
 });
@@ -58,7 +58,7 @@ MMPayApp.showPaymentModal({
 
 ```javascript
 const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
-    baseUrl:  'https://xxx.myanmyanpay.com',
+    baseUrl:  'https://xxx.myanmyanpay.com', // Sign up with us and ask our team
     environment:  'sandbox',
     merchantName:  'Your Shop Name',
 });
