@@ -96,8 +96,16 @@ MMPayApp.createPayment({
 });
 ```
 
+### Error Codes
 
-
+| Code | Description |
+| :--- | :--- |
+| **`R000`** | Internal Server Error ( Talk to our support immediately fot this ) |
+| **`R001`** | Wrong publishable Key |
+| **`R002`** | Key Not Live Yet |
+| **`R003`** | Origin Whitelist Not Allowed |
+| **`R004`** | Origin Requires SSL |
+| **`429`** | Ratelimit hit only 1000 request / minute allowed |
 
 
 ### 3. Angular Framework Implementation
