@@ -490,7 +490,7 @@ class MMPaySDK {
                 if (typeof QRious !== 'undefined' && canvas) {
                     new QRious({
                         element: canvas,
-                        value: qrData,
+                        value: unescape(encodeURIComponent(qrData)),
                         size: this.QR_SIZE,
                         padding: 15,
                         level: 'H'
