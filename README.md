@@ -39,6 +39,7 @@ showPaymentModal(paymentData: PaymentData): Promise<CreatePaymentResponse>
 MMPayApp.showPaymentModal({
     amount: 50000,
     orderId: 'ORD-' + new Date().getTime(),
+    customMessage: 'Your custom message here', // Optional
     callbackUrl: 'https://yoursite.com/confirmation' // Optional [Default callback input in our console will be called if no specified]
 }, (result) => {
     if (result.success) {
@@ -65,6 +66,7 @@ const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
 MMPayApp.showPaymentModal({
     amount: 50000,
     orderId: 'ORD-' + new Date().getTime(),
+    customMessage: 'Your custom message here', // Optional
     callbackUrl: 'https://yoursite.com/confirmation' // Optional [Default callback input in our console will be called if no specified]
 }, (result) => {
     if (result.success) {
@@ -88,6 +90,7 @@ createPayment(paymentData: PaymentData): Promise<CreatePaymentResponse>
 MMPayApp.createPayment({
     amount: 50000,
     orderId: 'ORD-' + new Date().getTime(),
+    customMessage: 'Your custom message here', // Optional
     callbackUrl: 'https://yoursite.com/confirmation' // Optional [Default callback input in our console will be called if no specified]
 }).then((result) => {
     if (result.qr) {
@@ -153,12 +156,14 @@ export class MMPayService {
      * @param {number} amount
      * @param {string} orderId
      * @param {string} callbackUrl
+     * @param {string} customMessage
      */
-    modalPay(amount: number, orderId: string, callbackUrl?: string) {
+    modalPay(amount: number, orderId: string, callbackUrl?: string, customMessage?: string) {
         this.mmpay.showPaymentModal({
             amount,
             orderId,
             callbackUrl,
+            customMessage,
         }, (result: ModalResponse) => {
             if (result.success) {
                 console.log('Redirect Some where');
@@ -169,12 +174,14 @@ export class MMPayService {
      * @param {number} amount
      * @param {string} orderId
      * @param {string} callbackUrl
+     * @param {string} customMessage
      */
-    pay(amount: number, orderId: string, callbackUrl?: string) {
+    pay(amount: number, orderId: string, callbackUrl?: string, customMessage?: string) {
         this.mmpay.createPayment({
             amount,
             orderId,
             callbackUrl,
+            customMessage,
         })
         .then((result: PayResponse) => {
             if (result.qr) {

@@ -1,15 +1,26 @@
-export interface ICorePayParams {
+export interface SDKOptions {
+  pollInterval?: number;
+  environment?: 'sandbox' | 'production';
+  baseUrl?: string;
+  merchantName?: string;
+}
+
+export interface ICreateTokenRequestParams {
   amount: number;
   orderId: string;
-  callbackUrl?: string;
+  nonce?: string;
+}
+export interface ICreateTokenResponse {
+  orderId: string;
+  token: string;
 }
 
 export interface ICreatePaymentRequestParams {
   amount: number;
-  currency?: string;
   orderId: string;
   callbackUrl?: string;
   nonce?: string;
+  customMessage?: string;
 }
 export interface ICreatePaymentResponse {
   _id: string;
@@ -19,17 +30,7 @@ export interface ICreatePaymentResponse {
   transactionRefId: string;
   qr: string;
 }
-export interface ICreateTokenRequestParams {
-  amount: number;
-  currency?: string;
-  orderId: string;
-  callbackUrl?: string;
-  nonce?: string;
-}
-export interface ICreateTokenResponse {
-  orderId: string;
-  token: string;
-}
+
 export interface IPollingRequest {
   amount: number;
   currency?: string;
@@ -45,12 +46,6 @@ export interface IPollingResponse {
 export interface PolliongResult {
   success: boolean;
   transaction: IPollingResponse;
-}
-export interface SDKOptions {
-  pollInterval?: number;
-  environment?: 'sandbox' | 'production';
-  baseUrl?: string;
-  merchantName?: string;
 }
 
 declare const QRious: any;
@@ -71,6 +66,7 @@ export class MMPaySDK {
   private merchantName: string;
   private environment: 'sandbox' | 'production';
   private pollIntervalId: number | undefined = undefined;
+  private countdownIntervalId: number | undefined = undefined;
   private onCompleteCallback: ((result: PolliongResult) => void) | null = null;
   private overlayElement: HTMLDivElement | null = null;
 
@@ -78,12 +74,8 @@ export class MMPaySDK {
   private pendingPaymentPayload: ICreatePaymentRequestParams | null = null;
 
   private readonly QR_SIZE: number = 290;
+  private readonly TIMEOUT_SECONDS: number = 300;
 
-  /**
-   * constructor
-   * @param publishableKey
-   * @param options
-   */
   constructor(publishableKey: string, options: SDKOptions = {}) {
     if (!publishableKey) {
       throw new Error("A Publishable Key is required to initialize [MMPaySDK].");
@@ -94,12 +86,7 @@ export class MMPaySDK {
     this.merchantName = options.merchantName || 'Your Merchant';
     this.POLL_INTERVAL_MS = options.pollInterval || 5000;
   }
-  /**
-   * _callApi
-   * @param endpoint
-   * @param data
-   * @returns
-   */
+
   private async _callApi<T>(endpoint: string, data: object = {}): Promise<T> {
     let config: any = {
       'Content-Type': 'application/json',
@@ -123,16 +110,7 @@ export class MMPaySDK {
     }
     return response.json() as Promise<T>;
   }
-  /**
-   * _callApiTokenRequest
-   * @param {ICreateTokenRequestParams} payload
-   * @param {number} payload.amount
-   * @param {string} payload.currency
-   * @param {string} payload.orderId
-   * @param {string} payload.nonce
-   * @param {string} payload.callbackUrl
-   * @returns {Promise<ICreateTokenResponse>}
-   */
+
   private async _callApiTokenRequest(payload: ICreateTokenRequestParams): Promise<ICreateTokenResponse> {
     try {
       const endpoint = this.environment === 'sandbox'
@@ -144,16 +122,7 @@ export class MMPaySDK {
       throw error;
     }
   }
-  /**
-   * _callApiPaymentRequest
-   * @param {ICreatePaymentRequestParams} payload
-   * @param {number} payload.amount
-   * @param {string} payload.currency
-   * @param {string} payload.orderId
-   * @param {string} payload.nonce
-   * @param {string} payload.callbackUrl
-   * @returns {Promise<ICreatePaymentResponse>}
-   */
+
   private async _callApiPaymentRequest(payload: ICreatePaymentRequestParams): Promise<ICreatePaymentResponse> {
     try {
       const endpoint = this.environment === 'sandbox'
@@ -166,85 +135,69 @@ export class MMPaySDK {
     }
   }
 
-
-
-  /**
-   * createPayment
-   * @param {ICorePayParams} params
-   * @param {number} params.amount
-   * @param {string} params.orderId
-   * @param {string} params.callbackUrl
-   * @returns {Promise<ICreatePaymentResponse>}
-   */
-  public async createPayment(params: ICorePayParams): Promise<ICreatePaymentResponse> {
-    const payload: ICreatePaymentRequestParams = {
+  public async createPayment(params: ICreatePaymentRequestParams): Promise<ICreatePaymentResponse> {
+    const tokenPayload: ICreateTokenRequestParams = {
+      amount: params.amount,
+      orderId: params.orderId,
+      nonce: new Date().getTime().toString() + '_mmp'
+    }
+    const paymentPayload: ICreatePaymentRequestParams = {
       amount: params.amount,
       orderId: params.orderId,
       callbackUrl: params.callbackUrl,
-      currency: 'MMK',
+      customMessage: params.customMessage,
       nonce: new Date().getTime().toString() + '_mmp'
     }
     try {
-      const tokenResponse = await this._callApiTokenRequest(payload);
+      const tokenResponse = await this._callApiTokenRequest(tokenPayload);
       this.tokenKey = tokenResponse.token as string;
-      const apiResponse = await this._callApiPaymentRequest(payload);
-      return apiResponse
+      return await this._callApiPaymentRequest(paymentPayload);
     } catch (error) {
       console.error("Payment request failed:", error);
       throw error;
     }
   }
-  /**
-   * showPaymentModal
-   * @param {ICorePayParams} params
-   * @param {number} params.amount
-   * @param {string} params.orderId
-   * @param {string} params.callbackUrl
-   * @param {Function} onComplete
-   */
+
   public async showPaymentModal(
-    params: ICorePayParams,
+    params: ICreatePaymentRequestParams,
     onComplete: (result: PolliongResult) => void
   ): Promise<void> {
     const initialContent = `<div class="mmpay-overlay-content"><div style="text-align: center; color: #fff;">ငွေပေးချေမှု စတင်နေသည်...</div></div>`;
     this._createAndRenderModal(initialContent, false);
     this.onCompleteCallback = onComplete;
-    const payload: ICreatePaymentRequestParams = {
+
+    const tokenPayload: ICreateTokenRequestParams = {
+      amount: params.amount,
+      orderId: params.orderId,
+      nonce: new Date().getTime().toString() + '_mmp'
+    }
+    const paymentPayload: ICreatePaymentRequestParams = {
       amount: params.amount,
       orderId: params.orderId,
       callbackUrl: params.callbackUrl,
-      currency: 'MMK',
+      customMessage: params.customMessage,
       nonce: new Date().getTime().toString() + '_mmp'
     }
 
     try {
-      const tokenResponse = await this._callApiTokenRequest(payload);
+      const tokenResponse = await this._callApiTokenRequest(tokenPayload);
       this.tokenKey = tokenResponse.token as string;
-      const apiResponse = await this._callApiPaymentRequest(payload);
+      const apiResponse = await this._callApiPaymentRequest(paymentPayload);
       if (apiResponse && apiResponse.qr && apiResponse.transactionRefId) {
         this.pendingApiResponse = apiResponse;
-        this.pendingPaymentPayload = payload;
-        this._renderQrModalContent(apiResponse, payload, this.merchantName);
-        this._startPolling(payload, onComplete);
+        this.pendingPaymentPayload = paymentPayload;
+        this._renderQrModalContent(apiResponse, paymentPayload, this.merchantName);
+        this._startPolling(paymentPayload, onComplete);
+        this._startCountdown(paymentPayload.orderId);
       } else {
         this._showTerminalMessage(apiResponse.orderId || 'N/A', 'FAILED', 'ငွေပေးချေမှု စတင်ရန် မအောင်မြင်ပါ။ QR ဒေတာ မရရှိပါ။');
       }
     } catch (error) {
       this.tokenKey = null;
-      this._showTerminalMessage(payload.orderId || 'N/A', 'FAILED', 'ငွေပေးချေမှု စတင်စဉ် အမှားအယွင်း ဖြစ်ပွားသည်။ ကွန်ဆိုးလ်တွင် ကြည့်ပါ။');
+      this._showTerminalMessage(paymentPayload.orderId || 'N/A', 'FAILED', 'ငွေပေးချေမှု စတင်စဉ် အမှားအယွင်း ဖြစ်ပွားသည်။ ကွန်ဆိုးလ်တွင် ကြည့်ပါ။');
     }
   }
 
-
-
-
-
-  /**
-   * _createAndRenderModal
-   * @param {string} contentHtml
-   * @param {boolean} isTerminal
-   * @returns
-   */
   private _createAndRenderModal(contentHtml: string, isTerminal: boolean = false): HTMLDivElement {
     this._cleanupModal(false);
     const overlay = document.createElement('div');
@@ -278,7 +231,6 @@ export class MMPaySDK {
               width: 100%;
               padding: 20px 0;
           }
-          /* Card Base Styles */
           .mmpay-card {
             background: #ffffff;
             border-radius: 16px;
@@ -349,15 +301,10 @@ export class MMPaySDK {
     };
     window.MMPayReRenderModal = () => this._reRenderPendingModalInstance();
     overlay.innerHTML += `<div class="mmpay-overlay-content">${contentHtml}</div>`;
-    document.body.style.overflow = 'hidden'; // FIX: Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
     return overlay;
   }
-  /**
-   * _renderQrModalContent
-   * @param {ICreatePaymentResponse} apiResponse
-   * @param {CreatePaymentRequest} payload
-   * @param {string} merchantName
-   */
+
   private _renderQrModalContent(apiResponse: ICreatePaymentResponse, payload: ICreatePaymentRequestParams, merchantName: string): void {
     const qrData = apiResponse.qr;
     const amountDisplay = `${apiResponse.amount.toFixed(2)} MMK`;
@@ -382,7 +329,7 @@ export class MMPaySDK {
       <style>
         .mmpay-card { max-width: 350px; padding: 16px; }
         .mmpay-header { color: #1f2937; font-size: 1rem; font-weight: bold; margin-bottom: 8px; }
-        .mmpay-qr-container { padding: 0; margin: 10px auto; display: inline-block; line-height: 0; width: 300px; height: 300px; }
+        .mmpay-qr-container { padding: 0; margin: 5px auto 10px auto; display: inline-block; line-height: 0; width: 300px; height: 300px; }
         #${qrCanvasId} { display: block; background: white; border-radius: 8px; width: 100%; height: 100%; }
         .mmpay-amount { font-size: 1.2rem; font-weight: 800; color: #1f2937; margin: 0; }
         .mmpay-separator { border-top: 1px solid #f3f4f6; margin: 12px 0; }
@@ -391,10 +338,28 @@ export class MMPaySDK {
         .mmpay-detail span { text-align: left; }
         .mmpay-secure-text { color: #757575; border-radius: 9999px; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
         .mmpay-warning { font-size: 0.75rem; color: #9ca3af; font-weight: 500; margin-top: 12px; line-height: 1.5; }
+
+        .mmpay-timer-badge {
+            background-color: #fef2f2;
+            color: #b91c1c;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin: 8px 0;
+            border: 1px solid #fee2e2;
+        }
+        .mmpay-timer-icon {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
       </style>
 
       <div class="mmpay-card">
-          <!-- Close Button - Triggers Confirmation Modal -->
           <button class="mmpay-close-btn" onclick="MMPayCloseModal(false)">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
                   <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
@@ -407,6 +372,14 @@ export class MMPaySDK {
 
           <div class="mmpay-header mmpay-text-myanmar">
               ${merchantName} သို့ပေးချေပါ
+          </div>
+
+          <div class="mmpay-timer-badge" id="mmpay-timer-badge">
+             <svg class="mmpay-timer-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+               <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/>
+               <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/>
+             </svg>
+             <span id="mmpay-countdown-text">05:00</span>
           </div>
 
           <div class="mmpay-amount">${amountDisplay}</div>
@@ -441,17 +414,12 @@ export class MMPaySDK {
     this._createAndRenderModal(qrContentHtml, false);
     this._injectQrScript(qrData, qrCanvasId);
   }
-  /**
-   * _showTerminalMessage
-   * @param {string} orderId
-   * @param {string} status
-   * @param {string} message
-   */
+
   private _showTerminalMessage(orderId: string, status: 'SUCCESS' | 'FAILED' | 'EXPIRED', message: string): void {
     this._cleanupModal(true);
-    const successColor = '#10b981'; // Tailwind Green 500
-    const failureColor = '#ef4444'; // Tailwind Red 500
-    const expiredColor = '#f59e0b'; // Tailwind Amber 500
+    const successColor = '#10b981';
+    const failureColor = '#ef4444';
+    const expiredColor = '#f59e0b';
     let color: string;
     let iconSvg: string;
     let statusText: string;
@@ -462,7 +430,6 @@ export class MMPaySDK {
                       <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022l-3.473 4.425-2.094-2.094a.75.75 0 0 0-1.06 1.06L6.92 10.865l.764.764a.75.75 0 0 0 1.06 0l4.5-5.5a.75.75 0 0 0-.01-1.05z"/>
                   </svg>`;
     } else {
-      // Shared icon for FAILED and EXPIRED (X mark)
       color = status === 'FAILED' ? failureColor : expiredColor;
       statusText = status === 'FAILED' ? 'မအောင်မြင်' : 'သက်တမ်းကုန်';
       iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="${color}" viewBox="0 0 16 16">
@@ -487,16 +454,20 @@ export class MMPaySDK {
             </button>
         </div>
     `;
-    this._createAndRenderModal(content, true); // Set isTerminal=true so the close button always forces cleanup
+    this._createAndRenderModal(content, true);
   }
-  /**
-   * _showCancelConfirmationModal
-   */
+
   private _showCancelConfirmationModal(): void {
     if (this.pollIntervalId !== undefined) {
       window.clearInterval(this.pollIntervalId);
       this.pollIntervalId = undefined;
     }
+
+    if (this.countdownIntervalId !== undefined) {
+      window.clearInterval(this.countdownIntervalId);
+      this.countdownIntervalId = undefined;
+    }
+
     this._cleanupModal(false);
     const content = `
         <div class="mmpay-card mmpay-terminal-card" style="
@@ -518,11 +489,9 @@ export class MMPaySDK {
             </div>
         </div>
     `;
-    this._createAndRenderModal(content, false); // Set isTerminal=false so the close button calls MMPayCloseModal(true)
+    this._createAndRenderModal(content, false);
   }
-  /**
-   * _reRenderPendingModalInstance
-   */
+
   private _reRenderPendingModalInstance(): void {
     if (this.pendingApiResponse && this.pendingPaymentPayload && this.onCompleteCallback) {
       this._cleanupModal(true);
@@ -531,14 +500,15 @@ export class MMPaySDK {
       this._cleanupModal(true);
     }
   }
-  /**
-   * Cleans up the modal and stops polling.
-   * @param {boolean} restoreBodyScroll
-   */
+
   private _cleanupModal(restoreBodyScroll: boolean): void {
     if (this.pollIntervalId !== undefined) {
       window.clearInterval(this.pollIntervalId);
       this.pollIntervalId = undefined;
+    }
+    if (this.countdownIntervalId !== undefined) {
+      window.clearInterval(this.countdownIntervalId);
+      this.countdownIntervalId = undefined;
     }
     if (this.overlayElement && this.overlayElement.parentNode) {
       this.overlayElement.parentNode.removeChild(this.overlayElement);
@@ -550,11 +520,7 @@ export class MMPaySDK {
     delete window.MMPayCloseModal;
     delete window.MMPayReRenderModal;
   }
-  /**
-   * _injectQrScript
-   * @param {string} qrData
-   * @param {string} qrCanvasId
-   */
+
   private _injectQrScript(qrData: string, qrCanvasId: string): void {
     const script = document.createElement('script');
     script.src = "https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js";
@@ -576,16 +542,7 @@ export class MMPaySDK {
     };
     document.head.appendChild(script);
   }
-  /**
-   * _startPolling
-   * @param {IPollingRequest} payload
-   * @param {number} payload.amount
-   * @param {string} payload.currency
-   * @param {string} payload.orderId
-   * @param {string} payload.nonce
-   * @param {string} payload.callbackUrl
-   * @param {Function} onComplete
-   */
+
   private async _startPolling(payload: IPollingRequest, onComplete: (result: PolliongResult) => void): Promise<void> {
     if (this.pollIntervalId !== undefined) {
       window.clearInterval(this.pollIntervalId);
@@ -621,7 +578,33 @@ export class MMPaySDK {
     checkStatus();
     this.pollIntervalId = window.setInterval(checkStatus, this.POLL_INTERVAL_MS);
   }
+
+  private _startCountdown(orderId: string): void {
+    if (this.countdownIntervalId !== undefined) {
+      window.clearInterval(this.countdownIntervalId);
+    }
+
+    let remaining = this.TIMEOUT_SECONDS;
+    const timerElement = document.getElementById('mmpay-countdown-text');
+
+    const updateDisplay = () => {
+      if (!timerElement) return;
+      const minutes = Math.floor(remaining / 60);
+      const seconds = remaining % 60;
+      timerElement.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    this.countdownIntervalId = window.setInterval(() => {
+      remaining--;
+      updateDisplay();
+
+      if (remaining <= 0) {
+        window.clearInterval(this.countdownIntervalId);
+        this.countdownIntervalId = undefined;
+        this._showTerminalMessage(orderId, 'EXPIRED', 'သတ်မှတ်ချိန်ကုန်သွားပါပြီ။');
+      }
+    }, 1000);
+  }
 }
 
-// Make the SDK class and its instance methods accessible globally
 (window as any).MMPaySDK = MMPaySDK;

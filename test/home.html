@@ -150,7 +150,7 @@
     <!-- Client-Side Application Logic -->
     <script>
         // --- Configuration ---
-        const PUBLISHABLE_KEY = 'pk_test_504013d7294ea1f6ecf4a2a0d38c31e0788286ef1b8ccacecf2a9b2809e23341'; // <<< REMEMBER TO REPLACE THIS KEY!
+        const PUBLISHABLE_KEY = 'pk_test_75cbca18e22481d4dec91865a23fca8984d893660c7eb3c151186adbbc0315db'; // <<< REMEMBER TO REPLACE THIS KEY!
         const CONTAINER_ID = 'payment-container';
         const RESULT_CONTAINER_ID = 'result-container';
         const PAY_BUTTON_ID = 'pay-button';
@@ -235,7 +235,8 @@
                 await sdk.showPaymentModal({
                     amount: parseFloat(finalAmount.toFixed(2)),
                     orderId: 'FSTY' + Date.now(),
-                    callbackUrl: 'https://your-fastify-backend.com/api/mmpay/webhook'
+                    callbackUrl: 'https://your-fastify-backend.com/api/mmpay/webhook',
+                    customMessage: "Myan Myan Pay Is Good"
                 }, (result) => {
 
                 });
