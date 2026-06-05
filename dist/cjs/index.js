@@ -556,17 +556,20 @@ class MMPaySDK {
         this._createAndRenderModal(content, true);
     }
     _showCancelConfirmationModal() {
-        if (this.pollIntervalId !== undefined) {
-            window.clearInterval(this.pollIntervalId);
-            this.pollIntervalId = undefined;
+        const overlayContent = this.overlayElement?.querySelector('.mmpay-overlay-content');
+        if (!overlayContent)
+            return;
+        const qrView = overlayContent.querySelector('.mmpay-qr-view');
+        if (qrView) {
+            qrView.style.display = 'none';
         }
-        if (this.countdownIntervalId !== undefined) {
-            window.clearInterval(this.countdownIntervalId);
-            this.countdownIntervalId = undefined;
+        let cancelView = document.getElementById('mmpay-cancel-view-container');
+        if (cancelView) {
+            cancelView.style.display = 'flex';
+            return;
         }
-        this._cleanupModal(false);
         const content = `
-        <div class="mmpay-card" style="padding: 64px 24px 32px 24px; box-sizing: border-box; width: 100%;">
+        <div id="mmpay-cancel-view-container" class="mmpay-card" style="padding: 64px 24px 32px 24px; box-sizing: border-box; width: 100%;">
 
             <div class="mmpay-toggle-container">
                 <button class="mmpay-toggle-btn btn-en" onclick="MMPayToggleLang('en')">EN</button>
@@ -609,15 +612,19 @@ class MMPaySDK {
             </div>
         </div>
     `;
-        this._createAndRenderModal(content, false);
+        overlayContent.insertAdjacentHTML('beforeend', content);
     }
     _reRenderPendingModalInstance() {
-        if (this.pendingApiResponse && this.pendingPaymentPayload && this.onCompleteCallback) {
-            this._cleanupModal(true);
-            this.showPaymentModal(this.pendingPaymentPayload, this.onCompleteCallback);
+        const cancelView = document.getElementById('mmpay-cancel-view-container');
+        if (cancelView) {
+            cancelView.style.display = 'none';
         }
-        else {
-            this._cleanupModal(true);
+        const overlayContent = this.overlayElement?.querySelector('.mmpay-overlay-content');
+        if (overlayContent) {
+            const qrView = overlayContent.querySelector('.mmpay-qr-view');
+            if (qrView) {
+                qrView.style.display = 'flex';
+            }
         }
     }
     _cleanupModal(restoreBodyScroll) {
