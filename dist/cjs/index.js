@@ -91,7 +91,13 @@ class MMPaySDK {
         }
     }
     async showPaymentModal(params, onComplete) {
-        const initialContent = `<div class="mmpay-overlay-content"><div style="text-align: center; color: #fff;">ငွေပေးချေမှု စတင်နေသည်...</div></div>`;
+        const initialContent = `
+      <div class="mmpay-card" style="padding: 64px 20px; justify-content: center;">
+          <div style="text-align: center; color: #1d1d1f; font-weight: 500; font-size: 1.1rem;">
+            <span class="en-text">Starting payment...</span>
+            <span class="mm-text">ငွေပေးချေမှု စတင်နေသည်...</span>
+          </div>
+      </div>`;
         this._createAndRenderModal(initialContent, false);
         this.onCompleteCallback = onComplete;
         const tokenPayload = {
@@ -118,108 +124,165 @@ class MMPaySDK {
                 this._startCountdown(paymentPayload.orderId);
             }
             else {
-                this._showTerminalMessage(apiResponse.orderId || 'N/A', 'FAILED', 'ငွေပေးချေမှု စတင်ရန် မအောင်မြင်ပါ။ QR ဒေတာ မရရှိပါ။');
+                this._showTerminalMessage(apiResponse.orderId || 'N/A', 'FAILED', '<span class="en-text">Failed to start payment. No QR data.</span><span class="mm-text">ငွေပေးချေမှု စတင်ရန် မအောင်မြင်ပါ။ QR ဒေတာ မရရှိပါ။</span>');
             }
         }
         catch (error) {
             this.tokenKey = null;
-            this._showTerminalMessage(paymentPayload.orderId || 'N/A', 'FAILED', 'ငွေပေးချေမှု စတင်စဉ် အမှားအယွင်း ဖြစ်ပွားသည်။ ကွန်ဆိုးလ်တွင် ကြည့်ပါ။');
+            this._showTerminalMessage(paymentPayload.orderId || 'N/A', 'FAILED', '<span class="en-text">Error occurred while starting payment.</span><span class="mm-text">ငွေပေးချေမှု စတင်စဉ် အမှားအယွင်း ဖြစ်ပွားသည်။</span>');
         }
     }
     _createAndRenderModal(contentHtml, isTerminal = false) {
         this._cleanupModal(false);
         const overlay = document.createElement('div');
         overlay.id = 'mmpay-full-modal';
+        overlay.className = 'mmpay-lang-en';
         document.body.appendChild(overlay);
         this.overlayElement = overlay;
         const style = document.createElement('style');
         style.innerHTML = `
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Padauk:wght@400;700&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&display=swap');
+
           #mmpay-full-modal {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background-color: rgba(0, 0, 0, 0.85);
-            z-index: 9999;
+            background-color: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 99999;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: opacity 0.3s;
-            padding: 15px;
+            transition: opacity 0.2s ease;
             box-sizing: border-box;
-            overflow: auto;
+            padding: 16px;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif, 'Padauk';
           }
+
+          .mmpay-lang-en .mm-text { display: none !important; }
+          .mmpay-lang-mm .en-text { display: none !important; }
+
+          .mmpay-toggle-container {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            display: flex;
+            background: #f5f5f7;
+            border-radius: 10px;
+            padding: 3px;
+            z-index: 10;
+            border: 1px solid rgba(0,0,0,0.04);
+          }
+          .mmpay-toggle-btn {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 5px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #86868b;
+            border: none;
+            background: transparent;
+            transition: all 0.2s ease;
+          }
+          .mmpay-lang-en .btn-en { background: #ffffff; color: #1d1d1f; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+          .mmpay-lang-mm .btn-mm { background: #ffffff; color: #1d1d1f; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+
           .mmpay-overlay-content {
               display: flex;
               align-items: center;
               justify-content: center;
-              min-height: 100%;
               width: 100%;
-              padding: 20px 0;
+              height: 100%;
           }
+
           .mmpay-card {
             background: #ffffff;
-            border-radius: 16px;
-            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4);
+            border-radius: 24px;
+            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0,0,0,0.02);
             text-align: center;
-            font-family: 'Inter', 'Padauk', sans-serif;
-            border: 1px solid #f3f4f6;
-            animation: fadeInScale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: mmpayFadeIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
             box-sizing: border-box;
             position: relative;
-            width: min(90vw, 330px);
-            margin: auto;
+            width: 100%;
+            max-width: 360px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
           }
-          @keyframes fadeInScale {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
+          @keyframes mmpayFadeIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
           }
+
           .mmpay-close-btn {
               position: absolute;
-              top: 10px;
-              right: 10px;
-              background: none;
+              top: 16px;
+              right: 16px;
+              background: #f5f5f7;
               border: none;
               cursor: pointer;
-              padding: 8px;
-              color: #9ca3af;
+              padding: 0;
+              color: #86868b;
               border-radius: 50%;
-              transition: color 0.2s, background-color 0.2s;
-              line-height: 1;
+              transition: all 0.2s ease;
               z-index: 10;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 32px;
+              height: 32px;
           }
           .mmpay-close-btn:hover {
-              color: #4b5563;
-              background-color: #f3f4f6;
+              background-color: #e5e5ea;
+              color: #1d1d1f;
           }
+
           .mmpay-button {
-            background-color: #4f46e5;
-            color: white;
+            background: #3a3a3c;
+            color: #ffffff;
             border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            font-weight: 700;
+            padding: 14px 20px;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
-            margin-top: 15px;
-            transition: background-color 0.2s, box-shadow 0.2s, transform 0.1s;
-            box-shadow: 0 5px 15px rgba(79, 70, 229, 0.3);
+            margin-top: 10px;
+            transition: all 0.2s ease;
             width: 100%;
+            -webkit-tap-highlight-color: transparent;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
           }
           .mmpay-button:hover {
-            background-color: #4338ca;
-            box-shadow: 0 8px 18px rgba(67, 56, 202, 0.4);
-            transform: translateY(-1px);
+            background: #48484a;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
           }
-          .mmpay-button:active {
-            transform: translateY(0);
-            background-color: #3f35c7;
+          .mmpay-button:active { transform: scale(0.98); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
+
+          .mmpay-button-secondary {
+            background: #ffffff;
+            color: #1d1d1f;
+            border: 1px solid #e5e5ea;
+            box-shadow: none;
           }
-          .mmpay-text-myanmar { font-family: 'Padauk', sans-serif; }
+          .mmpay-button-secondary:hover { background: #f5f5f7; box-shadow: none;}
+
+          .mmpay-button-danger {
+            background: #fff0f0;
+            color: #ff3b30;
+            box-shadow: none;
+          }
+          .mmpay-button-danger:hover { background: #ffe5e5; box-shadow: none;}
       `;
         overlay.appendChild(style);
+        window.MMPayToggleLang = (lang) => {
+            const modal = document.getElementById('mmpay-full-modal');
+            if (modal)
+                modal.className = 'mmpay-lang-' + lang;
+        };
         window.MMPayCloseModal = (forceClose = false) => {
             if (isTerminal || forceClose) {
                 this._cleanupModal(true);
@@ -229,27 +292,39 @@ class MMPaySDK {
             }
         };
         window.MMPayReRenderModal = () => this._reRenderPendingModalInstance();
-        overlay.innerHTML += `<div class="mmpay-overlay-content">${contentHtml}</div>`;
+        overlay.innerHTML += `
+      <div class="mmpay-overlay-content">${contentHtml}</div>
+    `;
         document.body.style.overflow = 'hidden';
         return overlay;
     }
     _renderQrModalContent(apiResponse, payload, merchantName) {
         const qrData = apiResponse.qr;
-        const amountDisplay = `${apiResponse.amount.toFixed(2)} MMK`;
-        const qrCanvasId = 'mmpayQrCanvas';
+        const formattedAmount = apiResponse.amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        const qrContainerId = 'mmpayQrContainerBox';
         const orderId = payload.orderId;
         window.MMPayDownloadQR = function () {
-            const canvas = document.getElementById(qrCanvasId);
-            if (!canvas)
+            const container = document.getElementById(qrContainerId);
+            if (!container)
                 return;
+            const canvas = container.querySelector('canvas');
+            const img = container.querySelector('img');
             try {
-                const dataURL = canvas.toDataURL('image/png');
-                const link = document.createElement('a');
-                link.href = dataURL;
-                link.download = `MMPay-QR-${orderId}.png`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                let dataURL = '';
+                if (canvas) {
+                    dataURL = canvas.toDataURL('image/png');
+                }
+                else if (img) {
+                    dataURL = img.src;
+                }
+                if (dataURL) {
+                    const link = document.createElement('a');
+                    link.href = dataURL;
+                    link.download = `MMPay-QR-${orderId}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
             }
             catch (e) {
                 console.error("Failed to download QR image:", e);
@@ -257,30 +332,85 @@ class MMPaySDK {
         };
         const qrContentHtml = `
       <style>
-        .mmpay-card { max-width: 350px; padding: 16px; }
-        .mmpay-header { color: #1f2937; font-size: 1rem; font-weight: bold; margin-bottom: 8px; }
-        .mmpay-qr-container { padding: 0; margin: 5px auto 10px auto; display: inline-block; line-height: 0; width: 300px; height: 300px; }
-        #${qrCanvasId} { display: block; background: white; border-radius: 8px; width: 100%; height: 100%; }
-        .mmpay-amount { font-size: 1.2rem; font-weight: 800; color: #1f2937; margin: 0; }
-        .mmpay-separator { border-top: 1px solid #f3f4f6; margin: 12px 0; }
-        .mmpay-detail { font-size: 0.8rem; color: #6b7280; margin: 3px 0; display: flex; justify-content: space-between; align-items: center; padding: 0 5px; }
-        .mmpay-detail strong { color: #374151; font-weight: 600; text-align: right; }
+        .mmpay-qr-view { padding: 64px 20px 24px 20px; box-sizing: border-box; width: 100%; display: flex; flex-direction: column; justify-content: center; }
+        .mmpay-header { color: #86868b; font-size: 1rem; font-weight: 500; margin-bottom: 6px; }
+
+        .mmpay-amount-wrapper {
+            margin: 0 auto 16px auto;
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 6px;
+        }
+        .mmpay-amount-value {
+            font-size: 1.85rem;
+            font-weight: 700;
+            color: #1d1d1f;
+            letter-spacing: -0.5px;
+            line-height: 1;
+        }
+        .mmpay-amount-currency {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #86868b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .mmpay-qr-container {
+            width: 220px;
+            height: 220px;
+            padding: 12px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #ffffff;
+            border-radius: 16px;
+            border: 1px solid rgba(0,0,0,0.06);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        #${qrContainerId} {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        /* Fix: Let the library handle the display property natively so they don't stack */
+        #${qrContainerId} canvas, #${qrContainerId} img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .mmpay-powered-text { font-size: 0.75rem; color: #86868b; font-weight: 500; margin: 12px auto 8px auto;}
+
+        .mmpay-detail-box {
+            background: #f9f9fb;
+            border-radius: 14px;
+            padding: 14px 16px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+        .mmpay-detail { font-size: 0.85rem; color: #86868b; margin: 6px 0; display: flex; justify-content: space-between; align-items: center; }
+        .mmpay-detail strong { color: #1d1d1f; font-weight: 600; text-align: right; }
         .mmpay-detail span { text-align: left; }
-        .mmpay-secure-text { color: #757575; border-radius: 9999px; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
-        .mmpay-warning { font-size: 0.75rem; color: #9ca3af; font-weight: 500; margin-top: 12px; line-height: 1.5; }
 
         .mmpay-timer-badge {
-            background-color: #fef2f2;
-            color: #b91c1c;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-weight: 700;
+            color: #d93025;
+            background: #fce8e6;
+            padding: 5px 12px;
+            border-radius: 10px;
             font-size: 0.85rem;
+            font-weight: 600;
             display: inline-flex;
             align-items: center;
-            gap: 5px;
-            margin: 8px 0;
-            border: 1px solid #fee2e2;
+            justify-content: center;
+            gap: 6px;
+            margin: 0 auto 16px auto;
         }
         .mmpay-timer-icon {
             width: 14px;
@@ -289,19 +419,39 @@ class MMPaySDK {
         }
       </style>
 
-      <div class="mmpay-card">
-          <button class="mmpay-close-btn" onclick="MMPayCloseModal(false)">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+      <div class="mmpay-card mmpay-qr-view">
+
+          <div class="mmpay-toggle-container">
+              <button class="mmpay-toggle-btn btn-en" onclick="MMPayToggleLang('en')">EN</button>
+              <button class="mmpay-toggle-btn btn-mm" onclick="MMPayToggleLang('mm')">MM</button>
+          </div>
+
+          <button class="mmpay-close-btn" onclick="MMPayCloseModal(false)" aria-label="Close">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
               </svg>
           </button>
 
-          <div style="padding:0px auto 16px auto">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/MMQR_Logo.svg" style="width:40px">
+          <div style="margin: 0 auto 16px auto; display: flex; align-items: center; justify-content: center;">
+            <img src="https://motephoe.com/images/mmqr.webp" alt="MyanMyanPay Logo" style="height: 40px; width: auto; object-fit: contain;">
           </div>
 
-          <div class="mmpay-header mmpay-text-myanmar">
-              ${merchantName} သို့ပေးချေပါ
+          <div class="mmpay-header">
+              ${merchantName}
+          </div>
+
+          <div class="mmpay-amount-wrapper">
+              <span class="mmpay-amount-value">${formattedAmount}</span>
+              <span class="mmpay-amount-currency">MMK</span>
+          </div>
+
+          <div class="mmpay-qr-container">
+              <div id="${qrContainerId}"></div>
+          </div>
+
+          <div class="mmpay-powered-text">
+              <span class="en-text">Payment powered by MyanMyanPay</span>
+              <span class="mm-text">MyanMyanPay ဖြင့် ငွေပေးချေမှုကို ထောက်ပံ့ထားသည်</span>
           </div>
 
           <div class="mmpay-timer-badge" id="mmpay-timer-badge">
@@ -312,74 +462,94 @@ class MMPaySDK {
              <span id="mmpay-countdown-text">05:00</span>
           </div>
 
-          <div class="mmpay-amount">${amountDisplay}</div>
-
-          <div class="mmpay-qr-container">
-              <canvas id="${qrCanvasId}" width="${this.QR_SIZE}" height="${this.QR_SIZE}"></canvas>
+          <div class="mmpay-detail-box">
+              <div class="mmpay-detail">
+                  <span>
+                    <span class="en-text">Order ID</span>
+                    <span class="mm-text">မှာယူမှုနံပါတ်</span>
+                  </span>
+                  <strong>${apiResponse.orderId}</strong>
+              </div>
+              <div class="mmpay-detail" style="margin-top: 8px;">
+                  <span>
+                    <span class="en-text">Transaction Ref</span>
+                    <span class="mm-text">ငွေပေးငွေယူနံပါတ်</span>
+                  </span>
+                  <strong>${apiResponse.transactionRefId}</strong>
+              </div>
           </div>
 
-          <button class="mmpay-button mmpay-text-myanmar" onclick="MMPayDownloadQR()">
-              QR ကုဒ်ကို ဒေါင်းလုဒ်လုပ်ပါ
+          <button class="mmpay-button" onclick="MMPayDownloadQR()">
+              <span class="en-text">Download QR Code</span>
+              <span class="mm-text">QR ကုဒ်ကို သိမ်းဆည်းမည်</span>
           </button>
-
-          <div class="mmpay-separator"></div>
-
-          <div class="mmpay-detail">
-              <span class="mmpay-text-myanmar">မှာယူမှုနံပါတ်:</span> <strong>${apiResponse.orderId}</strong>
-          </div>
-          <div class="mmpay-detail">
-              <span class="mmpay-text-myanmar">ငွေပေးငွေယူနံပါတ်:</span> <strong>${apiResponse.transactionRefId}</strong>
-          </div>
-
-          <p class="mmpay-warning mmpay-text-myanmar">
-              ကျေးဇူးပြု၍ သင့်ဖုန်းဖြင့် ငွေပေးချေမှုကို အပြီးသတ်ပေးပါ။
-          </p>
-
-          <div class="mmpay-secure-text">
-              လုံခြုံသော ငွေပေးချေမှု
-          </div>
       </div>
     `;
         this._cleanupModal(false);
         this._createAndRenderModal(qrContentHtml, false);
-        this._injectQrScript(qrData, qrCanvasId);
+        this._injectQrScript(qrData, qrContainerId);
     }
-    _showTerminalMessage(orderId, status, message) {
+    _showTerminalMessage(orderId, status, messageHtml) {
         this._cleanupModal(true);
-        const successColor = '#10b981';
-        const failureColor = '#ef4444';
-        const expiredColor = '#f59e0b';
-        let color;
+        const isSuccess = status === 'SUCCESS';
+        const iconColor = isSuccess ? '#34c759' : '#ff3b30';
+        const iconBg = isSuccess ? '#e8f8ec' : '#fce8e6';
         let iconSvg;
-        let statusText;
-        if (status === 'SUCCESS') {
-            color = successColor;
-            statusText = 'အောင်မြင်';
-            iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="${color}" viewBox="0 0 16 16">
-                      <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022l-3.473 4.425-2.094-2.094a.75.75 0 0 0-1.06 1.06L6.92 10.865l.764.764a.75.75 0 0 0 1.06 0l4.5-5.5a.75.75 0 0 0-.01-1.05z"/>
-                  </svg>`;
+        let statusTextEn;
+        let statusTextMm;
+        if (isSuccess) {
+            statusTextEn = 'Success';
+            statusTextMm = 'အောင်မြင်ပါသည်';
+            iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="${iconColor}" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                 </svg>`;
         }
         else {
-            color = status === 'FAILED' ? failureColor : expiredColor;
-            statusText = status === 'FAILED' ? 'မအောင်မြင်' : 'သက်တမ်းကုန်';
-            iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="${color}" viewBox="0 0 16 16">
-                      <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.146a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.146z"/>
-                  </svg>`;
+            statusTextEn = status === 'FAILED' ? 'Failed' : 'Expired';
+            statusTextMm = status === 'FAILED' ? 'မအောင်မြင်ပါ' : 'အချိန်ကျော်လွန်သွားပါပြီ';
+            iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="${iconColor}" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                 </svg>`;
         }
         const content = `
-        <div class="mmpay-card mmpay-terminal-card" style="
-            background: white; padding: 25px; box-sizing: border-box;
-        ">
-            <div style="margin-bottom: 20px;">${iconSvg}</div>
+        <div class="mmpay-card" style="padding: 64px 24px 32px 24px; box-sizing: border-box; width: 100%;">
 
-            <h2 style="font-size: 1.5rem; font-weight: 800; color: ${color}; margin-bottom: 10px;">
-                ငွေပေးချေမှု ${statusText}
+            <div class="mmpay-toggle-container">
+                <button class="mmpay-toggle-btn btn-en" onclick="MMPayToggleLang('en')">EN</button>
+                <button class="mmpay-toggle-btn btn-mm" onclick="MMPayToggleLang('mm')">MM</button>
+            </div>
+
+            <div style="
+                margin: 0 auto 24px auto;
+                width: 72px;
+                height: 72px;
+                border-radius: 50%;
+                background: ${iconBg};
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            ">
+                ${iconSvg}
+            </div>
+
+            <h2 style="font-size: 1.4rem; font-weight: 700; color: #1d1d1f; margin: 0 0 10px 0;">
+                <span class="en-text">${statusTextEn}</span>
+                <span class="mm-text">${statusTextMm}</span>
             </h2>
-            <p style="color: #4b5563; font-size: 0.95rem; font-weight: 600;">မှာယူမှုနံပါတ်: ${orderId}</p>
-            <p style="color: #6b7280; margin-top: 15px; margin-bottom: 25px; font-size: 0.9rem;">${message}</p>
 
-            <button class="mmpay-button mmpay-text-myanmar" style="background-color: ${color};" onclick="MMPayCloseModal(true)">
-                ပိတ်မည်
+            <div style="background: #f9f9fb; padding: 8px 14px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.03); display: inline-block; margin-bottom: 24px;">
+                <p style="color: #86868b; font-size: 0.85rem; margin: 0; font-weight: 600;">
+                    ID: ${orderId}
+                </p>
+            </div>
+
+            <p style="color: #86868b; margin-top: 0; margin-bottom: 32px; font-size: 0.95rem; line-height: 1.5;">
+                ${messageHtml}
+            </p>
+
+            <button class="mmpay-button" onclick="MMPayCloseModal(true)">
+                <span class="en-text">Close</span>
+                <span class="mm-text">ပိတ်မည်</span>
             </button>
         </div>
     `;
@@ -396,21 +566,45 @@ class MMPaySDK {
         }
         this._cleanupModal(false);
         const content = `
-        <div class="mmpay-card mmpay-terminal-card" style="
-            background: white; padding: 25px; box-sizing: border-box;
-        ">
-            <h2 style="font-size: 1.25rem; font-weight: 800; color: #f59e0b; margin-bottom: 10px;">
-                ငွေပေးချေမှုကို ပယ်ဖျက်မည်လား။
+        <div class="mmpay-card" style="padding: 64px 24px 32px 24px; box-sizing: border-box; width: 100%;">
+
+            <div class="mmpay-toggle-container">
+                <button class="mmpay-toggle-btn btn-en" onclick="MMPayToggleLang('en')">EN</button>
+                <button class="mmpay-toggle-btn btn-mm" onclick="MMPayToggleLang('mm')">MM</button>
+            </div>
+
+            <div style="
+                margin: 0 auto 24px auto;
+                width: 64px;
+                height: 64px;
+                border-radius: 50%;
+                background-color: #fff4e5;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #ff9500;
+            ">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <h2 style="font-size: 1.3rem; font-weight: 700; color: #1d1d1f; margin: 0 0 12px 0;">
+                <span class="en-text">Cancel Transaction?</span>
+                <span class="mm-text">လွှဲပြောင်းမှုကို ပယ်ဖျက်မလား</span>
             </h2>
-            <p style="color: #6b7280; margin-top: 15px; margin-bottom: 25px; font-size: 0.9rem;">
-                သင်သည် QR ဖြင့် ငွေပေးချေခြင်း မပြုရသေးကြောင်း သေချာပါသလား။ ပယ်ဖျက်ပြီးပါက ပြန်လည် စတင်ရပါမည်။
+            <p style="color: #86868b; margin-top: 0; margin-bottom: 32px; font-size: 0.95rem; line-height: 1.5;">
+                <span class="en-text">If you haven't paid yet, you can safely cancel this process.</span>
+                <span class="mm-text">သင်သည် ငွေပေးချေမှု မပြုလုပ်ရသေးပါက လုပ်ငန်းစဉ်အား ဖျက်သိမ်းနိုင်ပါသည်။</span>
             </p>
 
-            <div style="display: flex; gap: 10px;">
-                <button class="mmpay-button mmpay-text-myanmar"
-                        style="flex-grow: 1; background-color: #f3f4f6; color: #1f2937; box-shadow: none; margin-top: 0;"
-                        onclick="MMPayCloseModal(true)">
-                    ပယ်ဖျက်မည်
+            <div style="display: flex; gap: 10px; flex-direction: column;">
+                <button class="mmpay-button mmpay-button-danger" onclick="MMPayCloseModal(true)">
+                    <span class="en-text">Stop Process</span>
+                    <span class="mm-text">လုပ်ငန်းစဉ် ရပ်တန့်မည်</span>
+                </button>
+                <button class="mmpay-button mmpay-button-secondary" onclick="MMPayReRenderModal()">
+                    <span class="en-text">Go Back</span>
+                    <span class="mm-text">အနောက်သို့ ပြန်သွားမည်</span>
                 </button>
             </div>
         </div>
@@ -445,27 +639,33 @@ class MMPaySDK {
         delete window.MMPayCloseModal;
         delete window.MMPayReRenderModal;
     }
-    _injectQrScript(qrData, qrCanvasId) {
-        const script = document.createElement('script');
-        script.src = "https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js";
-        script.onload = () => {
-            setTimeout(() => {
-                const canvas = document.getElementById(qrCanvasId);
-                if (typeof QRious !== 'undefined' && canvas) {
-                    new QRious({
-                        element: canvas,
-                        value: unescape(encodeURIComponent(qrData)),
-                        size: this.QR_SIZE,
-                        padding: 15,
-                        level: 'H'
-                    });
-                }
-                else {
-                    console.error('Failed to load QRious or find canvas.');
-                }
-            }, 10);
+    _injectQrScript(qrData, qrContainerId) {
+        const initQR = () => {
+            const container = document.getElementById(qrContainerId);
+            if (typeof QRCode !== 'undefined' && container) {
+                container.innerHTML = ''; // clear any existing content
+                new QRCode(container, {
+                    text: qrData,
+                    width: this.QR_SIZE,
+                    height: this.QR_SIZE,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            }
+            else {
+                console.error('Failed to load qrcode.js or find container.');
+            }
         };
-        document.head.appendChild(script);
+        if (typeof QRCode !== 'undefined') {
+            setTimeout(initQR, 50);
+        }
+        else {
+            const script = document.createElement('script');
+            script.src = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
+            script.onload = () => setTimeout(initQR, 50);
+            document.head.appendChild(script);
+        }
     }
     async _startPolling(payload, onComplete) {
         if (this.pollIntervalId !== undefined) {
@@ -482,10 +682,12 @@ class MMPaySDK {
                     window.clearInterval(this.pollIntervalId);
                     this.pollIntervalId = undefined;
                     const success = status === 'SUCCESS';
-                    const message = success ?
-                        `ငွေပေးချေမှု အောင်မြင်ပါပြီ။ ငွေပေးငွေယူ ရည်ညွှန်းနံပါတ်: ${response.transactionRefId || 'N/A'}` :
-                        `ငွေပေးချေမှု ${status === 'FAILED' ? 'မအောင်မြင်ပါ' : 'သက်တမ်းကုန်သွားပါပြီ'}.`;
-                    this._showTerminalMessage(response.orderId || 'N/A', status, message);
+                    const messageHtml = success ?
+                        `<span class="en-text">Payment successful.<br>Ref: ${response.transactionRefId || 'N/A'}</span>
+             <span class="mm-text">ငွေပေးချေမှု အောင်မြင်ပါပြီ။<br>ရည်ညွှန်းနံပါတ်: ${response.transactionRefId || 'N/A'}</span>` :
+                        `<span class="en-text">Payment ${status === 'FAILED' ? 'failed' : 'expired'}.</span>
+             <span class="mm-text">ငွေပေးချေမှု ${status === 'FAILED' ? 'မအောင်မြင်ပါ' : 'သက်တမ်းကုန်သွားပါပြီ'}။</span>`;
+                    this._showTerminalMessage(response.orderId || 'N/A', status, messageHtml);
                     if (onComplete) {
                         this.tokenKey = null;
                         onComplete({ success: success, transaction: response });
@@ -519,7 +721,7 @@ class MMPaySDK {
             if (remaining <= 0) {
                 window.clearInterval(this.countdownIntervalId);
                 this.countdownIntervalId = undefined;
-                this._showTerminalMessage(orderId, 'EXPIRED', 'သတ်မှတ်ချိန်ကုန်သွားပါပြီ။');
+                this._showTerminalMessage(orderId, 'EXPIRED', '<span class="en-text">Time expired.</span><span class="mm-text">သတ်မှတ်ချိန်ကုန်သွားပါပြီ။</span>');
             }
         }, 1000);
     }

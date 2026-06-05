@@ -1,6 +1,6 @@
 {
   "name": "mmpay-browser-sdk",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "JavaScript SDK for integrating the MMQR Merchant and Redirect payment gateway",
   "keywords": [
     "MMQR",
@@ -28,7 +28,7 @@
   },
   "homepage": "https://github.com/nawing/Myan-Myan-Pay-SDK#readme",
   "scripts": {
-    "build": "npm run clean && tsc && tsc -p tsconfig.cjs.json && rollup -c",
+    "build": "tsc && tsc -p tsconfig.cjs.json && rollup -c",
     "clean": "rm -rf dist",
     "dev": "tsc --watch"
   },
