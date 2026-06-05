@@ -1,149 +1,143 @@
-(function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
-    typeof define === 'function' && define.amd ? define(['exports'], factory) :
-    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.MMPaySDK = {}));
-})(this, (function (exports) { 'use strict';
-
-    class MMPaySDK {
-        constructor(publishableKey, options = {}) {
-            this.pollIntervalId = undefined;
-            this.countdownIntervalId = undefined;
-            this.onCompleteCallback = null;
-            this.overlayElement = null;
-            this.pendingApiResponse = null;
-            this.pendingPaymentPayload = null;
-            this.QR_SIZE = 290;
-            this.TIMEOUT_SECONDS = 300;
-            if (!publishableKey) {
-                throw new Error("A Publishable Key is required to initialize [MMPaySDK].");
-            }
-            this.publishableKey = publishableKey;
-            this.environment = options.environment || 'production';
-            this.baseUrl = options.baseUrl || 'https://api.mm-pay.com';
-            this.merchantName = options.merchantName || 'Your Merchant';
-            this.POLL_INTERVAL_MS = options.pollInterval || 5000;
+export class MMPaySDK {
+    constructor(publishableKey, options = {}) {
+        this.pollIntervalId = undefined;
+        this.countdownIntervalId = undefined;
+        this.onCompleteCallback = null;
+        this.overlayElement = null;
+        this.pendingApiResponse = null;
+        this.pendingPaymentPayload = null;
+        this.QR_SIZE = 290;
+        this.TIMEOUT_SECONDS = 300;
+        if (!publishableKey) {
+            throw new Error("A Publishable Key is required to initialize [MMPaySDK].");
         }
-        async _callApi(endpoint, data = {}) {
-            let config = {
+        this.publishableKey = publishableKey;
+        this.environment = options.environment || 'production';
+        this.baseUrl = options.baseUrl || 'https://api.mm-pay.com';
+        this.merchantName = options.merchantName || 'Your Merchant';
+        this.POLL_INTERVAL_MS = options.pollInterval || 5000;
+    }
+    async _callApi(endpoint, data = {}) {
+        let config = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.publishableKey}`
+        };
+        if (this.tokenKey) {
+            config = {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.publishableKey}`
+                'Authorization': `Bearer ${this.publishableKey}`,
+                'X-MMPay-Btoken': `${this.tokenKey}`
             };
-            if (this.tokenKey) {
-                config = {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.publishableKey}`,
-                    'X-MMPay-Btoken': `${this.tokenKey}`
-                };
-            }
-            const response = await fetch(`${this.baseUrl}${endpoint}`, {
-                method: 'POST',
-                headers: config,
-                body: JSON.stringify(data)
-            });
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`API error (${response.status}): ${response.statusText}. Details: ${errorText}`);
-            }
-            return response.json();
         }
-        async _callApiTokenRequest(payload) {
-            try {
-                const endpoint = this.environment === 'sandbox'
-                    ? '/xpayments/sandbox-token-request'
-                    : '/xpayments/production-token-request';
-                return await this._callApi(endpoint, payload);
-            }
-            catch (error) {
-                console.error("Token request failed:", error);
-                throw error;
-            }
+        const response = await fetch(`${this.baseUrl}${endpoint}`, {
+            method: 'POST',
+            headers: config,
+            body: JSON.stringify(data)
+        });
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`API error (${response.status}): ${response.statusText}. Details: ${errorText}`);
         }
-        async _callApiPaymentRequest(payload) {
-            try {
-                const endpoint = this.environment === 'sandbox'
-                    ? '/xpayments/sandbox-payment-create'
-                    : '/xpayments/production-payment-create';
-                return await this._callApi(endpoint, payload);
-            }
-            catch (error) {
-                console.error("Payment request failed:", error);
-                throw error;
-            }
+        return response.json();
+    }
+    async _callApiTokenRequest(payload) {
+        try {
+            const endpoint = this.environment === 'sandbox'
+                ? '/xpayments/sandbox-token-request'
+                : '/xpayments/production-token-request';
+            return await this._callApi(endpoint, payload);
         }
-        async createPayment(params) {
-            const tokenPayload = {
-                amount: params.amount,
-                orderId: params.orderId,
-                nonce: new Date().getTime().toString() + '_mmp'
-            };
-            const paymentPayload = {
-                amount: params.amount,
-                orderId: params.orderId,
-                callbackUrl: params.callbackUrl,
-                customMessage: params.customMessage,
-                nonce: new Date().getTime().toString() + '_mmp'
-            };
-            try {
-                const tokenResponse = await this._callApiTokenRequest(tokenPayload);
-                this.tokenKey = tokenResponse.token;
-                return await this._callApiPaymentRequest(paymentPayload);
-            }
-            catch (error) {
-                console.error("Payment request failed:", error);
-                throw error;
-            }
+        catch (error) {
+            console.error("Token request failed:", error);
+            throw error;
         }
-        async showPaymentModal(params, onComplete) {
-            const initialContent = `
+    }
+    async _callApiPaymentRequest(payload) {
+        try {
+            const endpoint = this.environment === 'sandbox'
+                ? '/xpayments/sandbox-payment-create'
+                : '/xpayments/production-payment-create';
+            return await this._callApi(endpoint, payload);
+        }
+        catch (error) {
+            console.error("Payment request failed:", error);
+            throw error;
+        }
+    }
+    async createPayment(params) {
+        const tokenPayload = {
+            amount: params.amount,
+            orderId: params.orderId,
+            nonce: new Date().getTime().toString() + '_mmp'
+        };
+        const paymentPayload = {
+            amount: params.amount,
+            orderId: params.orderId,
+            callbackUrl: params.callbackUrl,
+            customMessage: params.customMessage,
+            nonce: new Date().getTime().toString() + '_mmp'
+        };
+        try {
+            const tokenResponse = await this._callApiTokenRequest(tokenPayload);
+            this.tokenKey = tokenResponse.token;
+            return await this._callApiPaymentRequest(paymentPayload);
+        }
+        catch (error) {
+            console.error("Payment request failed:", error);
+            throw error;
+        }
+    }
+    async showPaymentModal(params, onComplete) {
+        const initialContent = `
       <div class="mmpay-card" style="padding: 64px 20px; justify-content: center;">
           <div style="text-align: center; color: #1d1d1f; font-weight: 500; font-size: 1.1rem;">
             <span class="en-text">Starting payment...</span>
             <span class="mm-text">ငွေပေးချေမှု စတင်နေသည်...</span>
           </div>
       </div>`;
-            this._createAndRenderModal(initialContent, false);
-            this.onCompleteCallback = onComplete;
-            const tokenPayload = {
-                amount: params.amount,
-                orderId: params.orderId,
-                nonce: new Date().getTime().toString() + '_mmp'
-            };
-            const paymentPayload = {
-                amount: params.amount,
-                orderId: params.orderId,
-                callbackUrl: params.callbackUrl,
-                customMessage: params.customMessage,
-                nonce: new Date().getTime().toString() + '_mmp'
-            };
-            try {
-                const tokenResponse = await this._callApiTokenRequest(tokenPayload);
-                this.tokenKey = tokenResponse.token;
-                const apiResponse = await this._callApiPaymentRequest(paymentPayload);
-                if (apiResponse && apiResponse.qr && apiResponse.transactionRefId) {
-                    this.pendingApiResponse = apiResponse;
-                    this.pendingPaymentPayload = paymentPayload;
-                    this._renderQrModalContent(apiResponse, paymentPayload, this.merchantName);
-                    this._startPolling(paymentPayload, onComplete);
-                    this._startCountdown(paymentPayload.orderId);
-                }
-                else {
-                    this._showTerminalMessage(apiResponse.orderId || 'N/A', 'FAILED', '<span class="en-text">Failed to start payment. No QR data.</span><span class="mm-text">ငွေပေးချေမှု စတင်ရန် မအောင်မြင်ပါ။ QR ဒေတာ မရရှိပါ။</span>');
-                }
+        this._createAndRenderModal(initialContent, false);
+        this.onCompleteCallback = onComplete;
+        const tokenPayload = {
+            amount: params.amount,
+            orderId: params.orderId,
+            nonce: new Date().getTime().toString() + '_mmp'
+        };
+        const paymentPayload = {
+            amount: params.amount,
+            orderId: params.orderId,
+            callbackUrl: params.callbackUrl,
+            customMessage: params.customMessage,
+            nonce: new Date().getTime().toString() + '_mmp'
+        };
+        try {
+            const tokenResponse = await this._callApiTokenRequest(tokenPayload);
+            this.tokenKey = tokenResponse.token;
+            const apiResponse = await this._callApiPaymentRequest(paymentPayload);
+            if (apiResponse && apiResponse.qr && apiResponse.transactionRefId) {
+                this.pendingApiResponse = apiResponse;
+                this.pendingPaymentPayload = paymentPayload;
+                this._renderQrModalContent(apiResponse, paymentPayload, this.merchantName);
+                this._startPolling(paymentPayload, onComplete);
+                this._startCountdown(paymentPayload.orderId);
             }
-            catch (error) {
-                this.tokenKey = null;
-                this._showTerminalMessage(paymentPayload.orderId || 'N/A', 'FAILED', '<span class="en-text">Error occurred while starting payment.</span><span class="mm-text">ငွေပေးချေမှု စတင်စဉ် အမှားအယွင်း ဖြစ်ပွားသည်။</span>');
+            else {
+                this._showTerminalMessage(apiResponse.orderId || 'N/A', 'FAILED', '<span class="en-text">Failed to start payment. No QR data.</span><span class="mm-text">ငွေပေးချေမှု စတင်ရန် မအောင်မြင်ပါ။ QR ဒေတာ မရရှိပါ။</span>');
             }
         }
-        _createAndRenderModal(contentHtml, isTerminal = false) {
-            this._cleanupModal(false);
-            const overlay = document.createElement('div');
-            overlay.id = 'mmpay-full-modal';
-            overlay.className = 'mmpay-lang-en';
-            document.body.appendChild(overlay);
-            this.overlayElement = overlay;
-            const style = document.createElement('style');
-            style.innerHTML = `
+        catch (error) {
+            this.tokenKey = null;
+            this._showTerminalMessage(paymentPayload.orderId || 'N/A', 'FAILED', '<span class="en-text">Error occurred while starting payment.</span><span class="mm-text">ငွေပေးချေမှု စတင်စဉ် အမှားအယွင်း ဖြစ်ပွားသည်။</span>');
+        }
+    }
+    _createAndRenderModal(contentHtml, isTerminal = false) {
+        this._cleanupModal(false);
+        const overlay = document.createElement('div');
+        overlay.id = 'mmpay-full-modal';
+        overlay.className = 'mmpay-lang-en';
+        document.body.appendChild(overlay);
+        this.overlayElement = overlay;
+        const style = document.createElement('style');
+        style.innerHTML = `
           @import url('https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&display=swap');
 
           #mmpay-full-modal {
@@ -280,60 +274,60 @@
           }
           .mmpay-button-danger:hover { background: #ffe5e5; box-shadow: none;}
       `;
-            overlay.appendChild(style);
-            window.MMPayToggleLang = (lang) => {
-                const modal = document.getElementById('mmpay-full-modal');
-                if (modal)
-                    modal.className = 'mmpay-lang-' + lang;
-            };
-            window.MMPayCloseModal = (forceClose = false) => {
-                if (isTerminal || forceClose) {
-                    this._cleanupModal(true);
-                }
-                else {
-                    this._showCancelConfirmationModal();
-                }
-            };
-            window.MMPayReRenderModal = () => this._reRenderPendingModalInstance();
-            overlay.innerHTML += `
+        overlay.appendChild(style);
+        window.MMPayToggleLang = (lang) => {
+            const modal = document.getElementById('mmpay-full-modal');
+            if (modal)
+                modal.className = 'mmpay-lang-' + lang;
+        };
+        window.MMPayCloseModal = (forceClose = false) => {
+            if (isTerminal || forceClose) {
+                this._cleanupModal(true);
+            }
+            else {
+                this._showCancelConfirmationModal();
+            }
+        };
+        window.MMPayReRenderModal = () => this._reRenderPendingModalInstance();
+        overlay.innerHTML += `
       <div class="mmpay-overlay-content">${contentHtml}</div>
     `;
-            document.body.style.overflow = 'hidden';
-            return overlay;
-        }
-        _renderQrModalContent(apiResponse, payload, merchantName) {
-            const qrData = apiResponse.qr;
-            const formattedAmount = apiResponse.amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-            const qrContainerId = 'mmpayQrContainerBox';
-            const orderId = payload.orderId;
-            window.MMPayDownloadQR = function () {
-                const container = document.getElementById(qrContainerId);
-                if (!container)
-                    return;
-                const canvas = container.querySelector('canvas');
-                const img = container.querySelector('img');
-                try {
-                    let dataURL = '';
-                    if (canvas) {
-                        dataURL = canvas.toDataURL('image/png');
-                    }
-                    else if (img) {
-                        dataURL = img.src;
-                    }
-                    if (dataURL) {
-                        const link = document.createElement('a');
-                        link.href = dataURL;
-                        link.download = `MMPay-QR-${orderId}.png`;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                    }
+        document.body.style.overflow = 'hidden';
+        return overlay;
+    }
+    _renderQrModalContent(apiResponse, payload, merchantName) {
+        const qrData = apiResponse.qr;
+        const formattedAmount = apiResponse.amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        const qrContainerId = 'mmpayQrContainerBox';
+        const orderId = payload.orderId;
+        window.MMPayDownloadQR = function () {
+            const container = document.getElementById(qrContainerId);
+            if (!container)
+                return;
+            const canvas = container.querySelector('canvas');
+            const img = container.querySelector('img');
+            try {
+                let dataURL = '';
+                if (canvas) {
+                    dataURL = canvas.toDataURL('image/png');
                 }
-                catch (e) {
-                    console.error("Failed to download QR image:", e);
+                else if (img) {
+                    dataURL = img.src;
                 }
-            };
-            const qrContentHtml = `
+                if (dataURL) {
+                    const link = document.createElement('a');
+                    link.href = dataURL;
+                    link.download = `MMPay-QR-${orderId}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+            }
+            catch (e) {
+                console.error("Failed to download QR image:", e);
+            }
+        };
+        const qrContentHtml = `
       <style>
         .mmpay-qr-view { padding: 64px 20px 24px 20px; box-sizing: border-box; width: 100%; display: flex; flex-direction: column; justify-content: center; }
         .mmpay-header { color: #86868b; font-size: 1rem; font-weight: 500; margin-bottom: 6px; }
@@ -488,33 +482,33 @@
           </button>
       </div>
     `;
-            this._cleanupModal(false);
-            this._createAndRenderModal(qrContentHtml, false);
-            this._injectQrScript(qrData, qrContainerId);
-        }
-        _showTerminalMessage(orderId, status, messageHtml) {
-            this._cleanupModal(true);
-            const isSuccess = status === 'SUCCESS';
-            const iconColor = isSuccess ? '#34c759' : '#ff3b30';
-            const iconBg = isSuccess ? '#e8f8ec' : '#fce8e6';
-            let iconSvg;
-            let statusTextEn;
-            let statusTextMm;
-            if (isSuccess) {
-                statusTextEn = 'Success';
-                statusTextMm = 'အောင်မြင်ပါသည်';
-                iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="${iconColor}" stroke-width="3">
+        this._cleanupModal(false);
+        this._createAndRenderModal(qrContentHtml, false);
+        this._injectQrScript(qrData, qrContainerId);
+    }
+    _showTerminalMessage(orderId, status, messageHtml) {
+        this._cleanupModal(true);
+        const isSuccess = status === 'SUCCESS';
+        const iconColor = isSuccess ? '#34c759' : '#ff3b30';
+        const iconBg = isSuccess ? '#e8f8ec' : '#fce8e6';
+        let iconSvg;
+        let statusTextEn;
+        let statusTextMm;
+        if (isSuccess) {
+            statusTextEn = 'Success';
+            statusTextMm = 'အောင်မြင်ပါသည်';
+            iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="${iconColor}" stroke-width="3">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                  </svg>`;
-            }
-            else {
-                statusTextEn = status === 'FAILED' ? 'Failed' : 'Expired';
-                statusTextMm = status === 'FAILED' ? 'မအောင်မြင်ပါ' : 'အချိန်ကျော်လွန်သွားပါပြီ';
-                iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="${iconColor}" stroke-width="3">
+        }
+        else {
+            statusTextEn = status === 'FAILED' ? 'Failed' : 'Expired';
+            statusTextMm = status === 'FAILED' ? 'မအောင်မြင်ပါ' : 'အချိန်ကျော်လွန်သွားပါပြီ';
+            iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="${iconColor}" stroke-width="3">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                  </svg>`;
-            }
-            const content = `
+        }
+        const content = `
         <div class="mmpay-card" style="padding: 64px 24px 32px 24px; box-sizing: border-box; width: 100%;">
 
             <div class="mmpay-toggle-container">
@@ -556,19 +550,19 @@
             </button>
         </div>
     `;
-            this._createAndRenderModal(content, true);
+        this._createAndRenderModal(content, true);
+    }
+    _showCancelConfirmationModal() {
+        if (this.pollIntervalId !== undefined) {
+            window.clearInterval(this.pollIntervalId);
+            this.pollIntervalId = undefined;
         }
-        _showCancelConfirmationModal() {
-            if (this.pollIntervalId !== undefined) {
-                window.clearInterval(this.pollIntervalId);
-                this.pollIntervalId = undefined;
-            }
-            if (this.countdownIntervalId !== undefined) {
-                window.clearInterval(this.countdownIntervalId);
-                this.countdownIntervalId = undefined;
-            }
-            this._cleanupModal(false);
-            const content = `
+        if (this.countdownIntervalId !== undefined) {
+            window.clearInterval(this.countdownIntervalId);
+            this.countdownIntervalId = undefined;
+        }
+        this._cleanupModal(false);
+        const content = `
         <div class="mmpay-card" style="padding: 64px 24px 32px 24px; box-sizing: border-box; width: 100%;">
 
             <div class="mmpay-toggle-container">
@@ -612,126 +606,121 @@
             </div>
         </div>
     `;
-            this._createAndRenderModal(content, false);
+        this._createAndRenderModal(content, false);
+    }
+    _reRenderPendingModalInstance() {
+        if (this.pendingApiResponse && this.pendingPaymentPayload && this.onCompleteCallback) {
+            this._cleanupModal(true);
+            this.showPaymentModal(this.pendingPaymentPayload, this.onCompleteCallback);
         }
-        _reRenderPendingModalInstance() {
-            if (this.pendingApiResponse && this.pendingPaymentPayload && this.onCompleteCallback) {
-                this._cleanupModal(true);
-                this.showPaymentModal(this.pendingPaymentPayload, this.onCompleteCallback);
-            }
-            else {
-                this._cleanupModal(true);
-            }
-        }
-        _cleanupModal(restoreBodyScroll) {
-            if (this.pollIntervalId !== undefined) {
-                window.clearInterval(this.pollIntervalId);
-                this.pollIntervalId = undefined;
-            }
-            if (this.countdownIntervalId !== undefined) {
-                window.clearInterval(this.countdownIntervalId);
-                this.countdownIntervalId = undefined;
-            }
-            if (this.overlayElement && this.overlayElement.parentNode) {
-                this.overlayElement.parentNode.removeChild(this.overlayElement);
-                this.overlayElement = null;
-            }
-            if (restoreBodyScroll) {
-                document.body.style.overflow = '';
-            }
-            delete window.MMPayCloseModal;
-            delete window.MMPayReRenderModal;
-        }
-        _injectQrScript(qrData, qrContainerId) {
-            const initQR = () => {
-                const container = document.getElementById(qrContainerId);
-                if (typeof QRCode !== 'undefined' && container) {
-                    container.innerHTML = ''; // clear any existing content
-                    new QRCode(container, {
-                        text: qrData,
-                        width: this.QR_SIZE,
-                        height: this.QR_SIZE,
-                        colorDark: "#000000",
-                        colorLight: "#ffffff",
-                        correctLevel: QRCode.CorrectLevel.H
-                    });
-                }
-                else {
-                    console.error('Failed to load qrcode.js or find container.');
-                }
-            };
-            if (typeof QRCode !== 'undefined') {
-                setTimeout(initQR, 50);
-            }
-            else {
-                const script = document.createElement('script');
-                script.src = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
-                script.onload = () => setTimeout(initQR, 50);
-                document.head.appendChild(script);
-            }
-        }
-        async _startPolling(payload, onComplete) {
-            if (this.pollIntervalId !== undefined) {
-                window.clearInterval(this.pollIntervalId);
-            }
-            const checkStatus = async () => {
-                try {
-                    const endpoint = this.environment === 'sandbox'
-                        ? '/xpayments/sandbox-payment-polling'
-                        : '/xpayments/production-payment-polling';
-                    const response = await this._callApi(endpoint, payload);
-                    const status = (response.status || '').toUpperCase();
-                    if (status === 'SUCCESS' || status === 'FAILED' || status === 'EXPIRED') {
-                        window.clearInterval(this.pollIntervalId);
-                        this.pollIntervalId = undefined;
-                        const success = status === 'SUCCESS';
-                        const messageHtml = success ?
-                            `<span class="en-text">Payment successful.<br>Ref: ${response.transactionRefId || 'N/A'}</span>
-             <span class="mm-text">ငွေပေးချေမှု အောင်မြင်ပါပြီ။<br>ရည်ညွှန်းနံပါတ်: ${response.transactionRefId || 'N/A'}</span>` :
-                            `<span class="en-text">Payment ${status === 'FAILED' ? 'failed' : 'expired'}.</span>
-             <span class="mm-text">ငွေပေးချေမှု ${status === 'FAILED' ? 'မအောင်မြင်ပါ' : 'သက်တမ်းကုန်သွားပါပြီ'}။</span>`;
-                        this._showTerminalMessage(response.orderId || 'N/A', status, messageHtml);
-                        if (onComplete) {
-                            this.tokenKey = null;
-                            onComplete({ success: success, transaction: response });
-                        }
-                        return;
-                    }
-                }
-                catch (error) {
-                    console.error("Polling error:", error);
-                }
-            };
-            checkStatus();
-            this.pollIntervalId = window.setInterval(checkStatus, this.POLL_INTERVAL_MS);
-        }
-        _startCountdown(orderId) {
-            if (this.countdownIntervalId !== undefined) {
-                window.clearInterval(this.countdownIntervalId);
-            }
-            let remaining = this.TIMEOUT_SECONDS;
-            const timerElement = document.getElementById('mmpay-countdown-text');
-            const updateDisplay = () => {
-                if (!timerElement)
-                    return;
-                const minutes = Math.floor(remaining / 60);
-                const seconds = remaining % 60;
-                timerElement.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            };
-            this.countdownIntervalId = window.setInterval(() => {
-                remaining--;
-                updateDisplay();
-                if (remaining <= 0) {
-                    window.clearInterval(this.countdownIntervalId);
-                    this.countdownIntervalId = undefined;
-                    this._showTerminalMessage(orderId, 'EXPIRED', '<span class="en-text">Time expired.</span><span class="mm-text">သတ်မှတ်ချိန်ကုန်သွားပါပြီ။</span>');
-                }
-            }, 1000);
+        else {
+            this._cleanupModal(true);
         }
     }
-    window.MMPaySDK = MMPaySDK;
-
-    exports.MMPaySDK = MMPaySDK;
-
-}));
-//# sourceMappingURL=mmpay-sdk.js.map
+    _cleanupModal(restoreBodyScroll) {
+        if (this.pollIntervalId !== undefined) {
+            window.clearInterval(this.pollIntervalId);
+            this.pollIntervalId = undefined;
+        }
+        if (this.countdownIntervalId !== undefined) {
+            window.clearInterval(this.countdownIntervalId);
+            this.countdownIntervalId = undefined;
+        }
+        if (this.overlayElement && this.overlayElement.parentNode) {
+            this.overlayElement.parentNode.removeChild(this.overlayElement);
+            this.overlayElement = null;
+        }
+        if (restoreBodyScroll) {
+            document.body.style.overflow = '';
+        }
+        delete window.MMPayCloseModal;
+        delete window.MMPayReRenderModal;
+    }
+    _injectQrScript(qrData, qrContainerId) {
+        const initQR = () => {
+            const container = document.getElementById(qrContainerId);
+            if (typeof QRCode !== 'undefined' && container) {
+                container.innerHTML = ''; // clear any existing content
+                new QRCode(container, {
+                    text: qrData,
+                    width: this.QR_SIZE,
+                    height: this.QR_SIZE,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            }
+            else {
+                console.error('Failed to load qrcode.js or find container.');
+            }
+        };
+        if (typeof QRCode !== 'undefined') {
+            setTimeout(initQR, 50);
+        }
+        else {
+            const script = document.createElement('script');
+            script.src = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
+            script.onload = () => setTimeout(initQR, 50);
+            document.head.appendChild(script);
+        }
+    }
+    async _startPolling(payload, onComplete) {
+        if (this.pollIntervalId !== undefined) {
+            window.clearInterval(this.pollIntervalId);
+        }
+        const checkStatus = async () => {
+            try {
+                const endpoint = this.environment === 'sandbox'
+                    ? '/xpayments/sandbox-payment-polling'
+                    : '/xpayments/production-payment-polling';
+                const response = await this._callApi(endpoint, payload);
+                const status = (response.status || '').toUpperCase();
+                if (status === 'SUCCESS' || status === 'FAILED' || status === 'EXPIRED') {
+                    window.clearInterval(this.pollIntervalId);
+                    this.pollIntervalId = undefined;
+                    const success = status === 'SUCCESS';
+                    const messageHtml = success ?
+                        `<span class="en-text">Payment successful.<br>Ref: ${response.transactionRefId || 'N/A'}</span>
+             <span class="mm-text">ငွေပေးချေမှု အောင်မြင်ပါပြီ။<br>ရည်ညွှန်းနံပါတ်: ${response.transactionRefId || 'N/A'}</span>` :
+                        `<span class="en-text">Payment ${status === 'FAILED' ? 'failed' : 'expired'}.</span>
+             <span class="mm-text">ငွေပေးချေမှု ${status === 'FAILED' ? 'မအောင်မြင်ပါ' : 'သက်တမ်းကုန်သွားပါပြီ'}။</span>`;
+                    this._showTerminalMessage(response.orderId || 'N/A', status, messageHtml);
+                    if (onComplete) {
+                        this.tokenKey = null;
+                        onComplete({ success: success, transaction: response });
+                    }
+                    return;
+                }
+            }
+            catch (error) {
+                console.error("Polling error:", error);
+            }
+        };
+        checkStatus();
+        this.pollIntervalId = window.setInterval(checkStatus, this.POLL_INTERVAL_MS);
+    }
+    _startCountdown(orderId) {
+        if (this.countdownIntervalId !== undefined) {
+            window.clearInterval(this.countdownIntervalId);
+        }
+        let remaining = this.TIMEOUT_SECONDS;
+        const timerElement = document.getElementById('mmpay-countdown-text');
+        const updateDisplay = () => {
+            if (!timerElement)
+                return;
+            const minutes = Math.floor(remaining / 60);
+            const seconds = remaining % 60;
+            timerElement.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        };
+        this.countdownIntervalId = window.setInterval(() => {
+            remaining--;
+            updateDisplay();
+            if (remaining <= 0) {
+                window.clearInterval(this.countdownIntervalId);
+                this.countdownIntervalId = undefined;
+                this._showTerminalMessage(orderId, 'EXPIRED', '<span class="en-text">Time expired.</span><span class="mm-text">သတ်မှတ်ချိန်ကုန်သွားပါပြီ။</span>');
+            }
+        }, 1000);
+    }
+}
+window.MMPaySDK = MMPaySDK;
