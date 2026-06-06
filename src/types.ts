@@ -14,7 +14,6 @@ export interface ICreateTokenResponse {
   orderId: string;
   token: string;
 }
-
 export interface ICreatePaymentRequestParams {
   amount: number;
   orderId: string;
@@ -23,7 +22,6 @@ export interface ICreatePaymentRequestParams {
   customMessage?: string;
 }
 export interface ICreatePaymentResponse {
-  _id: string;
   amount: number;
   orderId: string;
   currency?: string;
@@ -36,11 +34,24 @@ export interface ICancelPaymentRequestParams {
   nonce?: string;
 }
 export interface ICancelPaymentResponse {
-  _id: string;
   amount: number;
   orderId: string;
-  transactionRefId: string;
+  status: 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED' | 'CANCELLED' | 'EXPIRED';
+  vendorQrRefId: string;
 }
+
+export interface IExpiryPaymentRequestParams {
+  orderId: string;
+  nonce?: string;
+}
+export interface IExpiryPaymentResponse {
+  amount: number;
+  orderId: string;
+  status: 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED' | 'CANCELLED' | 'EXPIRED';
+  vendorQrRefId: string;
+}
+
+
 
 export interface IPollingRequest {
   amount: number;
@@ -52,7 +63,7 @@ export interface IPollingRequest {
 export interface IPollingResponse {
   orderId: string;
   transactionRefId: string;
-  status: 'PENDING' | 'SUCCESS' | 'FAILED' | 'EXPIRED';
+  status: 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED' | 'CANCELLED' | 'EXPIRED';
 }
 export interface PolliongResult {
   success: boolean;

@@ -6,6 +6,8 @@ import {
   ICreatePaymentResponse,
   ICreateTokenRequestParams,
   ICreateTokenResponse,
+  IExpiryPaymentRequestParams,
+  IExpiryPaymentResponse,
   IPollingRequest,
   IPollingResponse,
   PolliongResult,
@@ -63,6 +65,13 @@ export class MMPaySDK {
     try {
       const parsed = JSON.parse(cachedData);
       if (Date.now() >= parsed.expireAt) {
+        // Fire expiration API if cache expired in the background
+        this.tokenKey = parsed.token;
+        this._callApiExpirePayment({
+          orderId: parsed.payload.orderId,
+          nonce: new Date().getTime().toString() + '_expire_auto'
+        }).catch(e => console.error("Auto-resume expire call failed:", e));
+
         this._clearCache();
         return;
       }
@@ -138,6 +147,13 @@ export class MMPaySDK {
     return await this._callApi<ICancelPaymentResponse>(endpoint, payload);
   }
 
+  private async _callApiExpirePayment(payload: IExpiryPaymentRequestParams): Promise<IExpiryPaymentResponse> {
+    const endpoint = this.environment === 'sandbox'
+      ? '/xpayments/sandbox-payment-expire'
+      : '/xpayments/production-payment-expire';
+    return await this._callApi<IExpiryPaymentResponse>(endpoint, payload);
+  }
+
   private _clearCache(): void {
     localStorage.removeItem(this.CACHE_KEY);
   }
@@ -185,6 +201,13 @@ export class MMPaySDK {
           this._startCountdown(this.pendingPaymentPayload.orderId, parsed.expireAt);
           return;
         } else {
+          // Fire expiration API if cache expired before showing modal again
+          this.tokenKey = parsed.token;
+          this._callApiExpirePayment({
+            orderId: parsed.payload.orderId,
+            nonce: new Date().getTime().toString() + '_expire_modal'
+          }).catch(e => console.error("Modal check expire call failed:", e));
+
           this._clearCache();
         }
       } catch (e) {
@@ -461,25 +484,34 @@ export class MMPaySDK {
       window.clearInterval(this.countdownIntervalId);
     }
 
-    const timerElement = document.getElementById('mmpay-countdown-text');
-
     const updateDisplay = () => {
-      if (!timerElement) return 0;
+      const timerElement = document.getElementById('mmpay-countdown-text');
       const remaining = Math.max(0, Math.floor((expireAt - Date.now()) / 1000));
-      const minutes = Math.floor(remaining / 60);
-      const seconds = remaining % 60;
-      timerElement.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+      if (timerElement) {
+        const minutes = Math.floor(remaining / 60);
+        const seconds = remaining % 60;
+        timerElement.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      }
       return remaining;
     }
 
     let currentRemaining = updateDisplay();
 
+    // Changed to a synchronous interval to prevent background Promise execution issues
     this.countdownIntervalId = window.setInterval(() => {
       currentRemaining = updateDisplay();
 
       if (currentRemaining <= 0) {
         window.clearInterval(this.countdownIntervalId);
         this.countdownIntervalId = undefined;
+
+        // Execute the API call without blocking the interval
+        this._callApiExpirePayment({
+          orderId: orderId,
+          nonce: new Date().getTime().toString() + '_expire'
+        }).catch(e => console.error("Expire API call failed", e));
+
         this._clearCache();
         this._showTerminalMessage(orderId, 'EXPIRED', '<span class="en-text">Time expired.</span><span class="mm-text">သတ်မှတ်ချိန်ကုန်သွားပါပြီ။</span>');
       }
