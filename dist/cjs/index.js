@@ -1,3 +1,5 @@
+'use strict';
+
 /******************************************************************************
 Copyright (c) Microsoft Corporation.
 
@@ -641,4 +643,4 @@ var MMPaySDK = /** @class */ (function () {
 }());
 window.MMPaySDK = MMPaySDK;
 
-export { MMPaySDK };
+exports.MMPaySDK = MMPaySDK;

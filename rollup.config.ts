@@ -4,19 +4,26 @@ export default {
   input: 'src/index.ts',
   output: [
     {
-      file: 'dist/mmpay-sdk.js',
-      format: 'umd',
-      name: 'MMPaySDK'
+      file: 'dist/cjs/index.js',
+      format: 'cjs',
+      exports: 'named'
     },
     {
-      file: 'dist/mmpay-sdk.esm.js',
+      file: 'dist/esm/index.js',
       format: 'es'
+    },
+    {
+      file: 'dist/umd/mmpay-sdk.js',
+      format: 'umd',
+      name: 'MMPaySDK',
+      exports: 'named'
     }
   ],
   plugins: [
     typescript({
       tsconfig: './tsconfig.json',
       compilerOptions: {
+        // This stops Rollup from fighting with tsc over declaration outputs
         outDir: 'dist',
         declaration: false,
         declarationMap: false,

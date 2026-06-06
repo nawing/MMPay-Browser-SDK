@@ -21,15 +21,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nawing/Myan-Myan-Pay-SDK.git"
+    "url": "git+https://github.com/nawing/MMPay-Browser-SDK.git"
   },
   "bugs": {
-    "url": "https://github.com/nawing/Myan-Myan-Pay-SDK/issues"
+    "url": "https://github.com/nawing/MMPay-Browser-SDK/issues"
   },
-  "homepage": "https://github.com/nawing/Myan-Myan-Pay-SDK#readme",
+  "homepage": "https://github.com/nawing/MMPay-Browser-SDK#readme",
   "scripts": {
-    "build": "tsc && rollup -c rollup.config.ts --configPlugin typescript",
-    "dev": "tsc --watch"
+    "build": "tsc --emitDeclarationOnly && rollup -c rollup.config.ts --configPlugin typescript",
+    "dev": "rollup -c rollup.config.ts -w --configPlugin typescript"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^26.0.1",
