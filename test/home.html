@@ -157,6 +157,13 @@
         const FINAL_AMOUNT_ID = 'final-amount';
         const ORDER_ITEMS_ID = 'order-items';
 
+        const sdk = new MMPaySDK(PUBLISHABLE_KEY, {
+            baseUrl: 'https://ezapi.myanmyanpay.com',
+            environment: 'sandbox',
+            merchantName: 'Fastify E-Shop',
+            pollInterval: 5000
+        });
+
         const mockOrder = {
             currency: 'MMK',
             items: [
@@ -225,13 +232,6 @@
             document.getElementById(RESULT_CONTAINER_ID).innerHTML = 'Payment initiated. Waiting for API response and starting polling...';
 
             try {
-
-                const sdk = new MMPaySDK(PUBLISHABLE_KEY, {
-                    baseUrl: 'https://ezapi.myanmyanpay.com',
-                    environment: 'sandbox',
-                    merchantName: 'Fastify E-Shop',
-                    pollInterval: 5000
-                });
                 await sdk.showPaymentModal({
                     amount: parseFloat(finalAmount.toFixed(2)),
                     orderId: 'FSTY' + Date.now(),

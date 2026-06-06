@@ -410,3 +410,87 @@ export function _getContentAfterModal(isSuccess: boolean, orderId: string, messa
 </div>
 `;
 }
+
+
+export function _getPreloadScreen(): string {
+  return `
+      <style>
+        @keyframes mmpayGodSweep {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(200%); }
+        }
+        @keyframes mmpayPulseSoft {
+          0%, 100% { opacity: 0.9; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.04); filter: drop-shadow(0 8px 16px rgba(0,0,0,0.06)); }
+        }
+        .mmpay-preload-wrapper {
+          padding: 56px 24px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-height: 290px;
+          background-color: #ffffff;
+        }
+        .mmpay-brand-core {
+          position: relative;
+          margin-bottom: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .mmpay-loader-img {
+          width: 65px; /* Scaled down significantly for a premium feel */
+          height: auto;
+          position: relative;
+          z-index: 2;
+          animation: mmpayPulseSoft 2.5s ease-in-out infinite;
+        }
+        .mmpay-progress-track {
+          width: 160px;
+          height: 2px;
+          background: #f1f5f9;
+          border-radius: 2px;
+          overflow: hidden;
+          position: relative;
+          margin-bottom: 24px;
+        }
+        .mmpay-progress-indicator {
+          position: absolute;
+          top: 0; left: 0; bottom: 0;
+          width: 40%;
+          background: linear-gradient(90deg, transparent, #0f172a, transparent);
+          animation: mmpayGodSweep 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+        .mmpay-preload-text {
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: #0f172a;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+        }
+        .mmpay-preload-subtext {
+          font-size: 0.8rem;
+          color: #86868b;
+          margin-top: 6px;
+          font-weight: 500;
+        }
+      </style>
+
+      <div class="mmpay-card mmpay-preload-wrapper">
+          <div class="mmpay-brand-core">
+              <img src="https://myanmyanpay.com/_next/image?url=%2Fmmp-logo.png&w=1920&q=75" alt="MMPay" class="mmpay-loader-img" />
+          </div>
+          <div class="mmpay-progress-track">
+              <div class="mmpay-progress-indicator"></div>
+          </div>
+          <div class="mmpay-preload-text">
+              <span class="en-text">Securing Transaction</span>
+              <span class="mm-text">လုံခြုံသော ချိတ်ဆက်မှု</span>
+          </div>
+          <div class="mmpay-preload-subtext">
+              <span class="en-text">Establishing end-to-end encryption...</span>
+              <span class="mm-text">လုံခြုံရေးစနစ်များကို ချိတ်ဆက်နေသည်...</span>
+          </div>
+      </div>`
+}
