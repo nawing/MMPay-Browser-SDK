@@ -9,7 +9,7 @@ Developed using **TypeScript**, the SDK offers a clean, type-safe interface and 
 ### 1. Code Implementation
 
 
-### Step 1: 🛠️  Plugin or SDK Installation
+###### Step 1: 🛠️  Plugin or SDK Installation
 The MyanMyanPay SDK is distributed as a single JavaScript file, ready for direct inclusion.
 
 Embed the following `<script>` tag into the `<head>` or before the closing `</body>` tag of your checkout page.
@@ -19,7 +19,7 @@ Embed the following `<script>` tag into the `<head>` or before the closing `</bo
 ```
 
 
-### Step 2: 🚀 Initialize Your App
+###### Step 2: 🚀 Initialize Your App
 The `MMPaySDK` class provides two distinct methods to suit different integration needs.
 
 #### **Example Implementation**
@@ -35,7 +35,7 @@ const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
 ```
 
 
-### Step 3: 🚀 Call Modal Object
+###### Step 3: 🚀 Call Modal Object
 ### `showPaymentModal()` (Recommended: UI + Polling)
 This is the easiest way to integrate. This method **initiates the transaction**, **renders the UI** (QR code/Redirect link) into your container, and automatically **polls your gateway** for payment completion status, executing a callback when the payment is final.
 
@@ -67,7 +67,7 @@ MMPayApp.showPaymentModal({
 });
 ```
 
-### Step 4: 🚀 Putting All Together
+###### Step 4: 🚀 Putting All Together
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/mmpay-browser-sdk@latest/dist/mmpay-sdk.js"></script>
@@ -82,6 +82,7 @@ const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
         color: '#0000000' // #color code
     }
 });
+
 MMPayApp.showPaymentModal({
     amount: 50000,
     orderId: 'ORD-' + new Date().getTime(),
@@ -126,15 +127,6 @@ MMPayApp.showPaymentModal({
 
 ```typescript
 import {Injectable} from '@angular/core';
-
-interface PayResponse {
-    _id: string;
-    amount: number;
-    orderId: string;
-    currency?: string;
-    transactionRefId: string;
-    qr: string;
-}
 
 interface ModalResponse {
     success: boolean,
@@ -196,7 +188,6 @@ export class MMPayService {
 
 ```
 
----
 
 ### 4. React Framework Implementation
 
@@ -204,6 +195,15 @@ export class MMPayService {
 
 ```tsx
 import React, { useEffect, useRef } from 'react';
+
+interface ModalResponse {
+    success: boolean,
+    created: boolean,
+    cancelled: boolean,
+    expired: boolean,
+    orderId: string;
+    transactionRefId: string;
+}
 
 export const useMMPay = () => {
   const mmpayRef = useRef(null);
@@ -234,7 +234,7 @@ export const useMMPay = () => {
         orderId,
         callbackUrl,
         customMessage,
-    }, (result) => {
+    }, (result: ModalResponse) => {
         if (result.success) {
             console.log('Success: ' + result.orderId + ' : Transaction : ' + result.transactionId);
             // Redirect Somewhere
@@ -269,7 +269,6 @@ export const Checkout = () => {
 };
 ```
 
----
 
 ### 5. Vue Framework Implementation
 
@@ -279,6 +278,15 @@ export const Checkout = () => {
 
 <script setup>
 import { onMounted, ref } from 'vue';
+
+interface ModalResponse {
+    success: boolean,
+    created: boolean,
+    cancelled: boolean,
+    expired: boolean,
+    orderId: string;
+    transactionRefId: string;
+}
 
 const mmpay = ref(null);
 
@@ -308,7 +316,7 @@ const pay = (amount: number, orderId: string, callbackUrl?: string, customMessag
         orderId,
         callbackUrl,
         customMessage,
-    }, (result) => {
+    }, (result: ModalResponse) => {
         if (result.success) {
             console.log('Success: ' + result.orderId + ' : Transaction : ' + result.transactionId);
             // Redirect Somewhere
