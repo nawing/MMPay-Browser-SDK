@@ -53,7 +53,13 @@ export interface IPollingResponse {
     transactionRefId?: string;
     orderId?: string;
 }
-export interface PolliongResult {
-    success: boolean;
-    transaction: IPollingResponse;
+export interface IModalEventResult {
+    success?: boolean;
+    created?: boolean;
+    cancelled?: boolean;
+    expired?: boolean;
+    failed?: boolean;
+    orderId?: string;
+    transactionId?: string;
+    transactionRefId?: string;
 }

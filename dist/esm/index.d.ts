@@ -1,4 +1,4 @@
-import { ICreatePaymentRequestParams, ICreatePaymentResponse, PolliongResult, SDKOptions } from './types';
+import { ICreatePaymentRequestParams, ICreatePaymentResponse, IModalEventResult, SDKOptions } from './types';
 export declare class MMPaySDK {
     private POLL_INTERVAL_MS;
     private tokenKey;
@@ -17,6 +17,7 @@ export declare class MMPaySDK {
     private readonly TIMEOUT_SECONDS;
     private readonly CACHE_KEY;
     constructor(publishableKey: string, options?: SDKOptions);
+    private _triggerEvent;
     private _checkAndAutoResume;
     private _callApi;
     private _callApiTokenRequest;
@@ -24,7 +25,7 @@ export declare class MMPaySDK {
     private _callApiCancelPayment;
     private _clearCache;
     createPayment(params: ICreatePaymentRequestParams): Promise<ICreatePaymentResponse>;
-    showPaymentModal(params: ICreatePaymentRequestParams, onComplete: (result: PolliongResult) => void): Promise<void>;
+    showPaymentModal(params: ICreatePaymentRequestParams, onComplete: (result: IModalEventResult) => void): Promise<void>;
     private _createAndRenderModal;
     private _renderQrModalContent;
     private _showTerminalMessage;

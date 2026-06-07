@@ -46,9 +46,16 @@ MMPayApp.showPaymentModal({
     callbackUrl: 'https://yoursite.com/confirmation' // Optional [Default callback input in our console will be called if no specified]
 }, (result) => {
     if (result.success) {
-        console.log('Transaction ID: ' + result.transactionId);
-    } else {
-        console.error('Failed: ' + result.message);
+        console.log('Success: ' + result.transactionId);
+    }
+    if (result.created) {
+        console.log('Created: ' + result.orderId);
+    }
+    if (result.cancelled) {
+        console.log('Cancelled: ' + result.orderId);
+    }
+    if (result.expired) {
+        console.log('Expoired: ' + result.orderId);
     }
 });
 ```
@@ -76,34 +83,21 @@ MMPayApp.showPaymentModal({
     callbackUrl: 'https://yoursite.com/confirmation' // Optional [Default callback input in our console will be called if no specified]
 }, (result) => {
     if (result.success) {
-        console.log('Redirect Some where');
+        console.log('Success: ' + result.transactionId);
+        // Redirect ?
+    }
+    if (result.created) {
+        console.log('Created: ' + result.orderId);
+    }
+    if (result.cancelled) {
+        console.log('Cancelled: ' + result.orderId);
+    }
+    if (result.expired) {
+        console.log('Expoired: ' + result.orderId);
     }
 });
 ```
 
-
-
-### 2. `createPayment()` (Advanced: JSON Only)
-Use this method if you need to build a fully **custom user interface** or if you are only initiating the request from the client and handling polling/UI on your server. This method returns MMQR string in JSON format.
-
-#### **Method Signature**
-```typescript
-createPayment(paymentData: PaymentData): Promise<CreatePaymentResponse>
-```
-
-#### **Example Implementation**
-```javascript
-MMPayApp.createPayment({
-    amount: 50000,
-    orderId: 'ORD-' + new Date().getTime(),
-    customMessage: 'Your custom message here', // Optional
-    callbackUrl: 'https://yoursite.com/confirmation' // Optional [Default callback input in our console will be called if no specified]
-}).then((result) => {
-    if (result.qr) {
-        console.log('Transaction ID: ' + result.qr);
-    }
-});
-```
 
 ### Error Codes
 
@@ -134,6 +128,9 @@ interface PayResponse {
 
 interface ModalResponse {
     success: boolean,
+    created: boolean,
+    cancelled: boolean,
+    expired: boolean,
     transaction: {
         orderId: string;
         transactionRefId: string;
@@ -175,26 +172,17 @@ export class MMPayService {
             customMessage,
         }, (result: ModalResponse) => {
             if (result.success) {
-                console.log('Redirect Some where');
+                console.log('Success: ' + result.transactionId);
+                // Redirect ?
             }
-        });
-    }
-    /**
-     * @param {number} amount
-     * @param {string} orderId
-     * @param {string} callbackUrl
-     * @param {string} customMessage
-     */
-    pay(amount: number, orderId: string, callbackUrl?: string, customMessage?: string) {
-        this.mmpay.createPayment({
-            amount,
-            orderId,
-            callbackUrl,
-            customMessage,
-        })
-        .then((result: PayResponse) => {
-            if (result.qr) {
-                console.log('Transaction ID: ' + result.qr);
+            if (result.created) {
+                console.log('Created: ' + result.orderId);
+            }
+            if (result.cancelled) {
+                console.log('Cancelled: ' + result.orderId);
+            }
+            if (result.expired) {
+                console.log('Expoired: ' + result.orderId);
             }
         });
     }

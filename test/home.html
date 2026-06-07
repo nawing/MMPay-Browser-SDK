@@ -132,10 +132,21 @@
                 await sdk.showPaymentModal({
                     amount: parseFloat(finalAmount.toFixed(2)),
                     orderId: 'FSTY' + Date.now(),
-                    callbackUrl: 'https://your-fastify-backend.com/api/mmpay/webhook',
-                    customMessage: "MyanMyanPay Fastify Checkout"
+                    callbackUrl: 'https://your-fastify-backend.com/api/mmpay/webhook'
                 }, (result) => {
-                    resultBox.innerHTML = `Transaction Complete.\nStatus: ${result.transaction.status}\nRef: ${result.transaction.transactionRefId}`;
+                    console.log(result)
+                    if (result.success) {
+                        resultBox.innerHTML = `QR Complete.\n Order: ${result.orderId} \nRef: ${result.transactionRefId}`;
+                    }
+                    if (result.created) {
+                        resultBox.innerHTML = `QR Created.\n Order: ${result.orderId}`;
+                    }
+                    if (result.cancelled) {
+                        resultBox.innerHTML = `QR Cancelled.\n Order: ${result.orderId}`;
+                    }
+                    if (result.expired) {
+                        resultBox.innerHTML = `QR Expired.\n Order: ${result.orderId}`;
+                    }
                     btn.disabled = false;
                     btn.classList.remove('opacity-70', 'cursor-not-allowed');
                 });

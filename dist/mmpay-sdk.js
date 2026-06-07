@@ -139,7 +139,9 @@
             else if (publishableKey.includes('pk_live')) {
                 this.environment = 'production';
             }
-            console.log(this.environment);
+            else {
+                this.environment = options.environment || 'production';
+            }
             this.baseUrl = options.baseUrl || 'https://api.mm-pay.com';
             this.merchantName = options.merchantName || 'Your Merchant';
             this.POLL_INTERVAL_MS = options.pollInterval || 5000;
@@ -151,8 +153,17 @@
                 this._checkAndAutoResume();
             }
         }
+        MMPaySDK.prototype._triggerEvent = function (eventData) {
+            if (this.onCompleteCallback) {
+                try {
+                    this.onCompleteCallback(eventData);
+                }
+                catch (e) {
+                    console.error("[MMPay SDK] Consumer callback error:", e);
+                }
+            }
+        };
         MMPaySDK.prototype._checkAndAutoResume = function () {
-            var _this = this;
             var cachedData = localStorage.getItem(this.CACHE_KEY);
             if (!cachedData)
                 return;
@@ -171,11 +182,7 @@
                 this.pendingPaymentPayload = parsed.payload;
                 this.pendingApiResponse = parsed.apiResponse;
                 this._renderQrModalContent(this.pendingApiResponse, this.pendingPaymentPayload, this.merchantName);
-                this._startPolling(this.pendingPaymentPayload, function (res) {
-                    if (_this.onCompleteCallback) {
-                        _this.onCompleteCallback(res);
-                    }
-                });
+                this._startPolling(this.pendingPaymentPayload);
                 this._startCountdown(this.pendingPaymentPayload.orderId, parsed.expireAt);
             }
             catch (e) {
@@ -211,7 +218,7 @@
                             return [4 /*yield*/, response.text()];
                         case 2:
                             errorText = _a.sent();
-                            throw new Error("API error (".concat(response.status, "): ").concat(response.statusText, ". Details: ").concat(errorText));
+                            throw new Error("API Error (".concat(response.status, "): ").concat(response.statusText, ". Details: ").concat(errorText));
                         case 3: return [2 /*return*/, response.json()];
                     }
                 });
@@ -312,7 +319,7 @@
         };
         MMPaySDK.prototype.showPaymentModal = function (params, onComplete) {
             return __awaiter(this, void 0, void 0, function () {
-                var cachedData, parsed, tokenPayload, paymentPayload, expireAt, apiCallSequence, apiResponse;
+                var cachedData, parsed, tokenPayload, paymentPayload, expireAt, apiCallSequence, startTime, apiResponse, apiError, e_1, elapsed_1, error_4, errMessage, terminalMsg;
                 var _this = this;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
@@ -327,8 +334,14 @@
                                         this.pendingPaymentPayload = parsed.payload;
                                         this.pendingApiResponse = parsed.apiResponse;
                                         this._renderQrModalContent(this.pendingApiResponse, this.pendingPaymentPayload, this.merchantName);
-                                        this._startPolling(this.pendingPaymentPayload, onComplete);
+                                        this._startPolling(this.pendingPaymentPayload);
                                         this._startCountdown(this.pendingPaymentPayload.orderId, parsed.expireAt);
+                                        this._triggerEvent({
+                                            created: true,
+                                            orderId: this.pendingPaymentPayload.orderId,
+                                            transactionId: this.pendingApiResponse.transactionRefId,
+                                            transactionRefId: this.pendingApiResponse.transactionRefId
+                                        });
                                         return [2 /*return*/];
                                     }
                                     else {
@@ -356,7 +369,7 @@
                             expireAt = Date.now() + (this.TIMEOUT_SECONDS * 1000);
                             _a.label = 1;
                         case 1:
-                            _a.trys.push([1, 3, , 4]);
+                            _a.trys.push([1, 8, , 9]);
                             apiCallSequence = function () { return __awaiter(_this, void 0, void 0, function () {
                                 var tokenResponse;
                                 return __generator(this, function (_a) {
@@ -370,12 +383,31 @@
                                     }
                                 });
                             }); };
-                            return [4 /*yield*/, Promise.all([
-                                    apiCallSequence(),
-                                    new Promise(function (resolve) { return setTimeout(resolve, 1500); })
-                                ])];
+                            startTime = Date.now();
+                            apiResponse = void 0;
+                            apiError = void 0;
+                            _a.label = 2;
                         case 2:
-                            apiResponse = (_a.sent())[0];
+                            _a.trys.push([2, 4, , 5]);
+                            return [4 /*yield*/, apiCallSequence()];
+                        case 3:
+                            apiResponse = _a.sent();
+                            return [3 /*break*/, 5];
+                        case 4:
+                            e_1 = _a.sent();
+                            apiError = e_1;
+                            return [3 /*break*/, 5];
+                        case 5:
+                            elapsed_1 = Date.now() - startTime;
+                            if (!(elapsed_1 < 1500)) return [3 /*break*/, 7];
+                            return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 1500 - elapsed_1); })];
+                        case 6:
+                            _a.sent();
+                            _a.label = 7;
+                        case 7:
+                            if (apiError) {
+                                throw apiError;
+                            }
                             if (apiResponse && apiResponse.qr && apiResponse.transactionRefId) {
                                 this.pendingApiResponse = apiResponse;
                                 this.pendingPaymentPayload = paymentPayload;
@@ -387,19 +419,32 @@
                                     environment: this.environment
                                 }));
                                 this._renderQrModalContent(apiResponse, paymentPayload, this.merchantName);
-                                this._startPolling(paymentPayload, onComplete);
+                                this._startPolling(paymentPayload);
                                 this._startCountdown(paymentPayload.orderId, expireAt);
+                                this._triggerEvent({
+                                    created: true,
+                                    orderId: paymentPayload.orderId,
+                                    transactionId: apiResponse.transactionRefId,
+                                    transactionRefId: apiResponse.transactionRefId
+                                });
                             }
                             else {
-                                this._showTerminalMessage(apiResponse.orderId || 'N/A', 'FAILED', '<span class="en-text">Failed to start payment. No QR data.</span><span class="mm-text">ငွေပေးချေမှု စတင်ရန် မအောင်မြင်ပါ။ QR ဒေတာ မရရှိပါ။</span>');
+                                throw new Error("Invalid API Response: Missing QR Data or Reference ID.");
                             }
-                            return [3 /*break*/, 4];
-                        case 3:
-                            _a.sent();
+                            return [3 /*break*/, 9];
+                        case 8:
+                            error_4 = _a.sent();
                             this.tokenKey = null;
-                            this._showTerminalMessage(paymentPayload.orderId || 'N/A', 'FAILED', '<span class="en-text">Error occurred while starting payment.</span><span class="mm-text">ငွေပေးချေမှု စတင်စဉ် အမှားအယွင်း ဖြစ်ပွားသည်။</span>');
-                            return [3 /*break*/, 4];
-                        case 4: return [2 /*return*/];
+                            console.error("[MMPay SDK Error]:", error_4);
+                            errMessage = (error_4 === null || error_4 === void 0 ? void 0 : error_4.message) || 'Error occurred while starting payment.';
+                            terminalMsg = "<span class=\"en-text\">".concat(errMessage, "</span><span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F \u1005\u1010\u1004\u103A\u1005\u1009\u103A \u1021\u1019\u103E\u102C\u1038\u1021\u101A\u103D\u1004\u103A\u1038 \u1016\u103C\u1005\u103A\u1015\u103D\u102C\u1038\u101E\u100A\u103A\u104B</span>");
+                            this._showTerminalMessage(paymentPayload.orderId || 'N/A', 'FAILED', terminalMsg);
+                            this._triggerEvent({
+                                failed: true,
+                                orderId: paymentPayload.orderId
+                            });
+                            return [3 /*break*/, 9];
+                        case 9: return [2 /*return*/];
                     }
                 });
             });
@@ -442,6 +487,10 @@
                                     })];
                             case 2:
                                 _a.sent();
+                                this._triggerEvent({
+                                    cancelled: true,
+                                    orderId: this.pendingPaymentPayload.orderId
+                                });
                                 return [3 /*break*/, 4];
                             case 3:
                                 _a.sent();
@@ -586,7 +635,7 @@
                 document.head.appendChild(script);
             }
         };
-        MMPaySDK.prototype._startPolling = function (payload, onComplete) {
+        MMPaySDK.prototype._startPolling = function (payload) {
             return __awaiter(this, void 0, void 0, function () {
                 var checkStatus;
                 var _this = this;
@@ -610,16 +659,25 @@
                                     if (status_1 === 'SUCCESS' || status_1 === 'FAILED' || status_1 === 'EXPIRED') {
                                         window.clearInterval(this.pollIntervalId);
                                         this.pollIntervalId = undefined;
+                                        if (this.countdownIntervalId !== undefined) {
+                                            window.clearInterval(this.countdownIntervalId);
+                                            this.countdownIntervalId = undefined;
+                                        }
                                         this._clearCache();
                                         success = status_1 === 'SUCCESS';
                                         messageHtml = success ?
                                             "<span class=\"en-text\">Payment successful.<br>Ref: ".concat(response.transactionRefId || 'N/A', "</span>\n             <span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F \u1021\u1031\u102C\u1004\u103A\u1019\u103C\u1004\u103A\u1015\u102B\u1015\u103C\u102E\u104B<br>\u101B\u100A\u103A\u100A\u103D\u103E\u1014\u103A\u1038\u1014\u1036\u1015\u102B\u1010\u103A: ").concat(response.transactionRefId || 'N/A', "</span>") :
                                             "<span class=\"en-text\">Payment ".concat(status_1 === 'FAILED' ? 'failed' : 'expired', ".</span>\n             <span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F ").concat(status_1 === 'FAILED' ? 'မအောင်မြင်ပါ' : 'သက်တမ်းကုန်သွားပါပြီ', "\u104B</span>");
                                         this._showTerminalMessage(response.orderId || 'N/A', status_1, messageHtml);
-                                        if (onComplete) {
-                                            this.tokenKey = null;
-                                            onComplete({ success: success, transaction: response });
-                                        }
+                                        this.tokenKey = null;
+                                        this._triggerEvent({
+                                            success: status_1 === 'SUCCESS',
+                                            failed: status_1 === 'FAILED',
+                                            expired: status_1 === 'EXPIRED',
+                                            orderId: response.orderId,
+                                            transactionId: response.transactionRefId,
+                                            transactionRefId: response.transactionRefId
+                                        });
                                         return [2 /*return*/];
                                     }
                                     return [3 /*break*/, 3];
@@ -664,6 +722,10 @@
                         }
                         this._clearCache();
                         this._showTerminalMessage(orderId, 'EXPIRED', '<span class="en-text">Time expired.</span><span class="mm-text">သတ်မှတ်ချိန်ကုန်သွားပါပြီ။</span>');
+                        this._triggerEvent({
+                            expired: true,
+                            orderId: orderId
+                        });
                     }
                     return [2 /*return*/];
                 });

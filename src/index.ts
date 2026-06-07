@@ -7,9 +7,9 @@ import {
   ICreateTokenRequestParams,
   ICreateTokenResponse,
   IDesignOptions,
+  IModalEventResult,
   IPollingRequest,
   IPollingResponse,
-  PolliongResult,
   SDKOptions
 } from './types';
 
@@ -25,14 +25,14 @@ declare const window: Window & {
 
 export class MMPaySDK {
   private POLL_INTERVAL_MS: number;
-  private tokenKey: string;
+  private tokenKey: string | any;
   private publishableKey: string;
   private baseUrl: string;
   private merchantName: string;
   private environment: 'sandbox' | 'production';
   private pollIntervalId: number | undefined = undefined;
   private countdownIntervalId: number | undefined = undefined;
-  private onCompleteCallback: ((result: PolliongResult) => void) | null = null;
+  private onCompleteCallback: ((result: IModalEventResult) => void) | null = null;
   private overlayElement: HTMLDivElement | null = null;
   private design: IDesignOptions;
 
@@ -49,14 +49,13 @@ export class MMPaySDK {
     }
     this.publishableKey = publishableKey;
 
-
     if (publishableKey.includes('pk_test')) {
       this.environment = 'sandbox';
     } else if (publishableKey.includes('pk_live')) {
       this.environment = 'production';
+    } else {
+      this.environment = options.environment || 'production';
     }
-
-    console.log(this.environment)
 
     this.baseUrl = options.baseUrl || 'https://api.mm-pay.com';
     this.merchantName = options.merchantName || 'Your Merchant';
@@ -69,6 +68,16 @@ export class MMPaySDK {
 
     if (typeof window !== 'undefined') {
       this._checkAndAutoResume();
+    }
+  }
+
+  private _triggerEvent(eventData: IModalEventResult): void {
+    if (this.onCompleteCallback) {
+      try {
+        this.onCompleteCallback(eventData);
+      } catch (e) {
+        console.error("[MMPay SDK] Consumer callback error:", e);
+      }
     }
   }
 
@@ -94,13 +103,9 @@ export class MMPaySDK {
       this.pendingPaymentPayload = parsed.payload;
       this.pendingApiResponse = parsed.apiResponse;
 
-      this._renderQrModalContent(this.pendingApiResponse, this.pendingPaymentPayload, this.merchantName);
-      this._startPolling(this.pendingPaymentPayload, (res) => {
-        if (this.onCompleteCallback) {
-          this.onCompleteCallback(res);
-        }
-      });
-      this._startCountdown(this.pendingPaymentPayload.orderId, parsed.expireAt);
+      this._renderQrModalContent(this.pendingApiResponse as ICreatePaymentResponse, this.pendingPaymentPayload as ICreatePaymentRequestParams, this.merchantName);
+      this._startPolling(this.pendingPaymentPayload as IPollingRequest);
+      this._startCountdown(this.pendingPaymentPayload!.orderId, parsed.expireAt);
     } catch (e) {
       this._clearCache();
     }
@@ -125,7 +130,7 @@ export class MMPaySDK {
     });
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`API error (${response.status}): ${response.statusText}. Details: ${errorText}`);
+      throw new Error(`API Error (${response.status}): ${response.statusText}. Details: ${errorText}`);
     }
     return response.json() as Promise<T>;
   }
@@ -187,7 +192,7 @@ export class MMPaySDK {
 
   public async showPaymentModal(
     params: ICreatePaymentRequestParams,
-    onComplete: (result: PolliongResult) => void
+    onComplete: (result: IModalEventResult) => void
   ): Promise<void> {
     this.onCompleteCallback = onComplete;
 
@@ -201,9 +206,16 @@ export class MMPaySDK {
           this.pendingPaymentPayload = parsed.payload;
           this.pendingApiResponse = parsed.apiResponse;
 
-          this._renderQrModalContent(this.pendingApiResponse, this.pendingPaymentPayload, this.merchantName);
-          this._startPolling(this.pendingPaymentPayload, onComplete);
-          this._startCountdown(this.pendingPaymentPayload.orderId, parsed.expireAt);
+          this._renderQrModalContent(this.pendingApiResponse as ICreatePaymentResponse, this.pendingPaymentPayload as ICreatePaymentRequestParams, this.merchantName);
+          this._startPolling(this.pendingPaymentPayload as IPollingRequest);
+          this._startCountdown(this.pendingPaymentPayload!.orderId, parsed.expireAt);
+
+          this._triggerEvent({
+            created: true,
+            orderId: this.pendingPaymentPayload!.orderId,
+            transactionId: this.pendingApiResponse!.transactionRefId,
+            transactionRefId: this.pendingApiResponse!.transactionRefId
+          });
           return;
         } else {
           this.tokenKey = parsed.token;
@@ -238,10 +250,24 @@ export class MMPaySDK {
         return await this._callApiPaymentRequest(paymentPayload);
       };
 
-      const [apiResponse] = await Promise.all([
-        apiCallSequence(),
-        new Promise(resolve => setTimeout(resolve, 1500))
-      ]);
+      const startTime = Date.now();
+      let apiResponse: ICreatePaymentResponse | undefined;
+      let apiError: any;
+
+      try {
+        apiResponse = await apiCallSequence();
+      } catch (e) {
+        apiError = e;
+      }
+
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 1500) {
+        await new Promise(resolve => setTimeout(resolve, 1500 - elapsed));
+      }
+
+      if (apiError) {
+        throw apiError;
+      }
 
       if (apiResponse && apiResponse.qr && apiResponse.transactionRefId) {
         this.pendingApiResponse = apiResponse;
@@ -256,14 +282,31 @@ export class MMPaySDK {
         }));
 
         this._renderQrModalContent(apiResponse, paymentPayload, this.merchantName);
-        this._startPolling(paymentPayload, onComplete);
+        this._startPolling(paymentPayload);
         this._startCountdown(paymentPayload.orderId, expireAt);
+
+        this._triggerEvent({
+          created: true,
+          orderId: paymentPayload.orderId,
+          transactionId: apiResponse.transactionRefId,
+          transactionRefId: apiResponse.transactionRefId
+        });
       } else {
-        this._showTerminalMessage(apiResponse.orderId || 'N/A', 'FAILED', '<span class="en-text">Failed to start payment. No QR data.</span><span class="mm-text">ငွေပေးချေမှု စတင်ရန် မအောင်မြင်ပါ။ QR ဒေတာ မရရှိပါ။</span>');
+        throw new Error("Invalid API Response: Missing QR Data or Reference ID.");
       }
-    } catch (error) {
+    } catch (error: any) {
       this.tokenKey = null;
-      this._showTerminalMessage(paymentPayload.orderId || 'N/A', 'FAILED', '<span class="en-text">Error occurred while starting payment.</span><span class="mm-text">ငွေပေးချေမှု စတင်စဉ် အမှားအယွင်း ဖြစ်ပွားသည်။</span>');
+      console.error("[MMPay SDK Error]:", error);
+
+      const errMessage = error?.message || 'Error occurred while starting payment.';
+      const terminalMsg = `<span class="en-text">${errMessage}</span><span class="mm-text">ငွေပေးချေမှု စတင်စဉ် အမှားအယွင်း ဖြစ်ပွားသည်။</span>`;
+
+      this._showTerminalMessage(paymentPayload.orderId || 'N/A', 'FAILED', terminalMsg);
+
+      this._triggerEvent({
+        failed: true,
+        orderId: paymentPayload.orderId
+      });
     }
   }
 
@@ -291,7 +334,13 @@ export class MMPaySDK {
               orderId: this.pendingPaymentPayload.orderId,
               nonce: new Date().getTime().toString() + '_cancel'
             });
+
+            this._triggerEvent({
+              cancelled: true,
+              orderId: this.pendingPaymentPayload.orderId
+            });
           } catch (e) {
+
           }
           this._clearCache();
         }
@@ -435,7 +484,7 @@ export class MMPaySDK {
     }
   }
 
-  private async _startPolling(payload: IPollingRequest, onComplete: ((result: PolliongResult) => void) | null): Promise<void> {
+  private async _startPolling(payload: IPollingRequest): Promise<void> {
     if (this.pollIntervalId !== undefined) {
       window.clearInterval(this.pollIntervalId);
     }
@@ -451,6 +500,12 @@ export class MMPaySDK {
         if (status === 'SUCCESS' || status === 'FAILED' || status === 'EXPIRED') {
           window.clearInterval(this.pollIntervalId);
           this.pollIntervalId = undefined;
+
+          if (this.countdownIntervalId !== undefined) {
+            window.clearInterval(this.countdownIntervalId);
+            this.countdownIntervalId = undefined;
+          }
+
           this._clearCache();
 
           const success = status === 'SUCCESS';
@@ -462,10 +517,15 @@ export class MMPaySDK {
 
           this._showTerminalMessage(response.orderId || 'N/A', status as 'SUCCESS' | 'FAILED' | 'EXPIRED', messageHtml);
 
-          if (onComplete) {
-            this.tokenKey = null;
-            onComplete({success: success, transaction: response as IPollingResponse});
-          }
+          this.tokenKey = null;
+          this._triggerEvent({
+            success: status === 'SUCCESS',
+            failed: status === 'FAILED',
+            expired: status === 'EXPIRED',
+            orderId: response.orderId,
+            transactionId: response.transactionRefId,
+            transactionRefId: response.transactionRefId
+          });
           return;
         }
       } catch (error) {
@@ -508,6 +568,10 @@ export class MMPaySDK {
         this._clearCache();
         this._showTerminalMessage(orderId, 'EXPIRED', '<span class="en-text">Time expired.</span><span class="mm-text">သတ်မှတ်ချိန်ကုန်သွားပါပြီ။</span>');
 
+        this._triggerEvent({
+          expired: true,
+          orderId: orderId
+        });
       }
     }, 1000);
   }
