@@ -22,6 +22,10 @@ The `MMPaySDK` class provides two distinct methods to suit different integration
 const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
     baseUrl:  'https://xxx.myanmyanpay.com', // Sign up with us and ask our team
     merchantName:  'Your Shop Name',
+    design: {
+        mode: 'dark', // dark | dark-translucent | light | light-translucent
+        color: '#DE3163' // #color code
+    }
 });
 ```
 
@@ -60,6 +64,10 @@ MMPayApp.showPaymentModal({
 const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
     baseUrl:  'https://xxx.myanmyanpay.com', // Sign up with us and ask our team
     merchantName:  'Your Shop Name',
+    design: {
+        mode: 'light', // dark | dark-translucent | light | light-translucent
+        color: '#0000000' // #color code
+    },
 });
 MMPayApp.showPaymentModal({
     amount: 50000,
@@ -146,7 +154,11 @@ export class MMPayService {
         }
         this.mmpay = new MMPaySDK('pk_test_123', {
             baseUrl:  'https://xxx.myanmyanpay.com', // Sign up with us and ask our tea
-            merchantName: 'Test Shop'
+            merchantName: 'Test Shop',
+            design: {
+                mode: 'light-translucent', // dark | dark-translucent | light | light-translucent
+                color: '#9CA6EB' // #color code
+            }
         });
     }
     /**
@@ -211,7 +223,11 @@ export const useMMPay = () => {
 
     mmpayRef.current = new MMPaySDK('pk_test_123', {
       baseUrl: 'https://xxx.myanmyanpay.com',
-      merchantName: 'Test Shop'
+      merchantName: 'Test Shop',
+    design: {
+        mode: 'dark-translucent', // dark | dark-translucent | light | light-translucent
+        color: '#E1A284' // #color code
+    }
     });
   }, []);
 

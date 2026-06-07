@@ -13,7 +13,7 @@ export default {
       format: 'es'
     },
     {
-      file: 'dist/umd/mmpay-sdk.js',
+      file: 'dist/mmpay-sdk.js',
       format: 'umd',
       name: 'MMPaySDK',
       exports: 'named'

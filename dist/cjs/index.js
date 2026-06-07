@@ -129,16 +129,16 @@ var MMPaySDK = /** @class */ (function () {
             throw new Error("A Publishable Key is required to initialize [MMPaySDK].");
         }
         this.publishableKey = publishableKey;
-        if (publishableKey.startsWith('pk_test_')) {
+        if (publishableKey.includes('pk_test')) {
             this.environment = 'sandbox';
         }
-        else if (publishableKey.startsWith('pk_live_')) {
+        else if (publishableKey.includes('pk_live')) {
             this.environment = 'production';
         }
+        console.log(this.environment);
         this.baseUrl = options.baseUrl || 'https://api.mm-pay.com';
         this.merchantName = options.merchantName || 'Your Merchant';
         this.POLL_INTERVAL_MS = options.pollInterval || 5000;
-        // Set design defaults as requested
         this.design = {
             mode: ((_a = options.design) === null || _a === void 0 ? void 0 : _a.mode) || 'light',
             color: ((_b = options.design) === null || _b === void 0 ? void 0 : _b.color) || '#000000'
@@ -154,6 +154,10 @@ var MMPaySDK = /** @class */ (function () {
             return;
         try {
             var parsed = JSON.parse(cachedData);
+            if (parsed.environment !== this.environment) {
+                this._clearCache();
+                return;
+            }
             if (Date.now() >= parsed.expireAt) {
                 this.tokenKey = parsed.token;
                 this._clearCache();
@@ -314,7 +318,7 @@ var MMPaySDK = /** @class */ (function () {
                         if (cachedData) {
                             try {
                                 parsed = JSON.parse(cachedData);
-                                if (Date.now() < parsed.expireAt) {
+                                if (parsed.environment === this.environment && Date.now() < parsed.expireAt) {
                                     this.tokenKey = parsed.token;
                                     this.pendingPaymentPayload = parsed.payload;
                                     this.pendingApiResponse = parsed.apiResponse;
@@ -375,7 +379,8 @@ var MMPaySDK = /** @class */ (function () {
                                 payload: paymentPayload,
                                 apiResponse: apiResponse,
                                 expireAt: expireAt,
-                                token: this.tokenKey
+                                token: this.tokenKey,
+                                environment: this.environment
                             }));
                             this._renderQrModalContent(apiResponse, paymentPayload, this.merchantName);
                             this._startPolling(paymentPayload, onComplete);
