@@ -609,8 +609,9 @@ var MMPaySDK = /** @class */ (function () {
             var container = document.getElementById(qrContainerId);
             if (typeof QRCode !== 'undefined' && container) {
                 container.innerHTML = '';
+                var safeUtf8Data = unescape(encodeURIComponent(qrData));
                 new QRCode(container, {
-                    text: qrData,
+                    text: safeUtf8Data,
                     width: _this.QR_SIZE,
                     height: _this.QR_SIZE,
                     colorDark: "#000000",
