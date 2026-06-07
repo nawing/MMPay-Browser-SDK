@@ -1,4 +1,6 @@
-export function _getContentCancelModal(): string {
+import {IDesignOptions} from './types';
+
+export function _getContentCancelModal(design?: IDesignOptions): string {
   return `
 <div id="mmpay-cancel-view-container" class="mmpay-card" style="padding: 64px 24px 32px 24px; box-sizing: border-box; width: 100%;">
 
@@ -12,7 +14,7 @@ export function _getContentCancelModal(): string {
                 width: 64px;
                 height: 64px;
                 border-radius: 50%;
-                background-color: #fff4e5;
+                background-color: var(--mmp-warn-bg);
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -22,11 +24,11 @@ export function _getContentCancelModal(): string {
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
         </svg>
     </div>
-    <h2 style="font-size: 1.3rem; font-weight: 700; color: #1d1d1f; margin: 0 0 12px 0;">
+    <h2 style="font-size: 1.3rem; font-weight: 700; color: var(--mmp-text-main); margin: 0 0 12px 0;">
         <span class="en-text">Cancel Transaction?</span>
         <span class="mm-text">လွှဲပြောင်းမှုကို ပယ်ဖျက်မလား</span>
     </h2>
-    <p style="color: #86868b; margin-top: 0; margin-bottom: 32px; font-size: 0.95rem; line-height: 1.5;">
+    <p style="color: var(--mmp-text-sub); margin-top: 0; margin-bottom: 32px; font-size: 0.95rem; line-height: 1.5;">
         <span class="en-text">If you haven't paid yet, you can safely cancel this process.</span>
         <span class="mm-text">သင်သည် ငွေပေးချေမှု မပြုလုပ်ရသေးပါက လုပ်ငန်းစဉ်အား ဖျက်သိမ်းနိုင်ပါသည်။</span>
     </p>
@@ -44,12 +46,43 @@ export function _getContentCancelModal(): string {
 </div>`;
 }
 
+export function _getContentCoreCss(design?: IDesignOptions): string {
+  const mode = design?.mode || 'light';
+  const isDark = mode.includes('dark');
+  const isTranslucent = mode.includes('translucent');
 
-export function _getContentCoreCss(): string {
+  let cardBg = isDark ? '#1c1c1e' : '#ffffff';
+  if (isTranslucent) {
+    cardBg = isDark ? 'rgba(28, 28, 30, 0.75)' : 'rgba(255, 255, 255, 0.75)';
+  }
+  const backdrop = isTranslucent ? 'blur(20px)' : 'none';
+
   return `
 @import url('https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&display=swap');
 
 #mmpay-full-modal {
+  /* Dynamic Design System Variables */
+  --mmp-card-bg: ${cardBg};
+  --mmp-card-backdrop: ${backdrop};
+  --mmp-text-main: ${isDark ? '#f5f5f7' : '#1d1d1f'};
+  --mmp-text-sub: ${isDark ? 'rgba(235, 235, 245, 0.6)' : '#86868b'};
+  --mmp-border: ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)'};
+  --mmp-btn-main-bg: ${isDark ? '#ffffff' : '#3a3a3c'};
+  --mmp-btn-main-text: ${isDark ? '#000000' : '#ffffff'};
+  --mmp-btn-sec-bg: ${isDark ? '#2c2c2e' : '#ffffff'};
+  --mmp-btn-sec-text: ${isDark ? '#f5f5f7' : '#1d1d1f'};
+  --mmp-btn-sec-border: ${isDark ? '#3a3a3c' : '#e5e5ea'};
+  --mmp-detail-bg: ${isDark ? '#2c2c2e' : '#f9f9fb'};
+  --mmp-toggle-bg: ${isDark ? '#2c2c2e' : '#f5f5f7'};
+  --mmp-toggle-btn-active: ${isDark ? '#636366' : '#ffffff'};
+  --mmp-toggle-btn-text: ${isDark ? '#ffffff' : '#1d1d1f'};
+  --mmp-progress-track: ${isDark ? '#2c2c2e' : '#f1f5f9'};
+  --mmp-progress-ind: ${isDark ? 'linear-gradient(90deg, transparent, #ffffff, transparent)' : 'linear-gradient(90deg, transparent, #0f172a, transparent)'};
+  --mmp-success-bg: ${isDark ? 'rgba(52, 199, 89, 0.2)' : '#e8f8ec'};
+  --mmp-fail-bg: ${isDark ? 'rgba(255, 59, 48, 0.2)' : '#fce8e6'};
+  --mmp-warn-bg: ${isDark ? 'rgba(255, 149, 0, 0.2)' : '#fff4e5'};
+  --mmp-close-btn-hover: ${isDark ? '#3a3a3c' : '#e5e5ea'};
+
   position: fixed;
   top: 0;
   left: 0;
@@ -76,11 +109,11 @@ export function _getContentCoreCss(): string {
   top: 16px;
   left: 16px;
   display: flex;
-  background: #f5f5f7;
+  background: var(--mmp-toggle-bg);
   border-radius: 10px;
   padding: 3px;
   z-index: 10;
-  border: 1px solid rgba(0,0,0,0.04);
+  border: 1px solid var(--mmp-border);
 }
 .mmpay-toggle-btn {
   font-family: -apple-system, BlinkMacSystemFont, sans-serif;
@@ -89,13 +122,13 @@ export function _getContentCoreCss(): string {
   padding: 5px 10px;
   border-radius: 8px;
   cursor: pointer;
-  color: #86868b;
+  color: var(--mmp-text-sub);
   border: none;
   background: transparent;
   transition: all 0.2s ease;
 }
-.mmpay-lang-en .btn-en { background: #ffffff; color: #1d1d1f; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
-.mmpay-lang-mm .btn-mm { background: #ffffff; color: #1d1d1f; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.mmpay-lang-en .btn-en { background: var(--mmp-toggle-btn-active); color: var(--mmp-toggle-btn-text); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.mmpay-lang-mm .btn-mm { background: var(--mmp-toggle-btn-active); color: var(--mmp-toggle-btn-text); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
 
 .mmpay-overlay-content {
     display: flex;
@@ -106,9 +139,11 @@ export function _getContentCoreCss(): string {
 }
 
 .mmpay-card {
-  background: #ffffff;
+  background: var(--mmp-card-bg);
+  backdrop-filter: var(--mmp-card-backdrop);
+  -webkit-backdrop-filter: var(--mmp-card-backdrop);
   border-radius: 24px;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0,0,0,0.02);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12), 0 0 0 1px var(--mmp-border);
   text-align: center;
   animation: mmpayFadeIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
   box-sizing: border-box;
@@ -128,11 +163,11 @@ export function _getContentCoreCss(): string {
     position: absolute;
     top: 16px;
     right: 16px;
-    background: #f5f5f7;
+    background: var(--mmp-toggle-bg);
     border: none;
     cursor: pointer;
     padding: 0;
-    color: #86868b;
+    color: var(--mmp-text-sub);
     border-radius: 50%;
     transition: all 0.2s ease;
     z-index: 10;
@@ -143,13 +178,13 @@ export function _getContentCoreCss(): string {
     height: 32px;
 }
 .mmpay-close-btn:hover {
-    background-color: #e5e5ea;
-    color: #1d1d1f;
+    background-color: var(--mmp-close-btn-hover);
+    color: var(--mmp-text-main);
 }
 
 .mmpay-button {
-  background: #3a3a3c;
-  color: #ffffff;
+  background: var(--mmp-btn-main-bg);
+  color: var(--mmp-btn-main-text);
   border: none;
   padding: 14px 20px;
   border-radius: 14px;
@@ -163,34 +198,35 @@ export function _getContentCoreCss(): string {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 .mmpay-button:hover {
-  background: #48484a;
+  filter: brightness(1.1);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 .mmpay-button:active { transform: scale(0.98); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
 
 .mmpay-button-secondary {
-  background: #ffffff;
-  color: #1d1d1f;
-  border: 1px solid #e5e5ea;
+  background: var(--mmp-btn-sec-bg);
+  color: var(--mmp-btn-sec-text);
+  border: 1px solid var(--mmp-btn-sec-border);
   box-shadow: none;
 }
-.mmpay-button-secondary:hover { background: #f5f5f7; box-shadow: none;}
+.mmpay-button-secondary:hover { background: var(--mmp-toggle-bg); box-shadow: none;}
 
 .mmpay-button-danger {
-  background: #fff0f0;
+  background: var(--mmp-fail-bg);
   color: #ff3b30;
   box-shadow: none;
 }
-.mmpay-button-danger:hover { background: #ffe5e5; box-shadow: none;}
-`
+.mmpay-button-danger:hover { filter: brightness(0.95); box-shadow: none;}
+`;
 }
 
+export function _getContentQRDisplay(qrContainerId: string, merchantName: string, formattedAmount: string, apiResponse: any, design?: IDesignOptions): string {
+  const downloadBtnColor = design?.color || '#000000';
 
-export function _getContentQRDisplay(qrContainerId: string, merchantName: string, formattedAmount: string, apiResponse: any): string {
   return `
       <style>
         .mmpay-qr-view { padding: 64px 20px 24px 20px; box-sizing: border-box; width: 100%; display: flex; flex-direction: column; justify-content: center; }
-        .mmpay-header { color: #86868b; font-size: 1rem; font-weight: 500; margin-bottom: 6px; }
+        .mmpay-header { color: var(--mmp-text-sub); font-size: 1rem; font-weight: 500; margin-bottom: 6px; }
 
         .mmpay-amount-wrapper {
             margin: 0 auto 16px auto;
@@ -202,14 +238,14 @@ export function _getContentQRDisplay(qrContainerId: string, merchantName: string
         .mmpay-amount-value {
             font-size: 1.85rem;
             font-weight: 700;
-            color: #1d1d1f;
+            color: var(--mmp-text-main);
             letter-spacing: -0.5px;
             line-height: 1;
         }
         .mmpay-amount-currency {
             font-size: 0.95rem;
             font-weight: 600;
-            color: #86868b;
+            color: var(--mmp-text-sub);
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
@@ -222,9 +258,9 @@ export function _getContentQRDisplay(qrContainerId: string, merchantName: string
             display: flex;
             justify-content: center;
             align-items: center;
-            background: #ffffff;
+            background: #ffffff; /* Must remain white for QR scanner readability */
             border-radius: 16px;
-            border: 1px solid rgba(0,0,0,0.06);
+            border: 1px solid var(--mmp-border);
             box-shadow: 0 8px 24px rgba(0,0,0,0.04);
             box-sizing: border-box;
             overflow: hidden;
@@ -236,29 +272,28 @@ export function _getContentQRDisplay(qrContainerId: string, merchantName: string
             align-items: center;
             justify-content: center;
         }
-        /* Fix: Let the library handle the display property natively so they don't stack */
         #${qrContainerId} canvas, #${qrContainerId} img {
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
         }
 
-        .mmpay-powered-text { font-size: 0.75rem; color: #86868b; font-weight: 500; margin: 12px auto 8px auto;}
+        .mmpay-powered-text { font-size: 0.75rem; color: var(--mmp-text-sub); font-weight: 500; margin: 12px auto 8px auto;}
 
         .mmpay-detail-box {
-            background: #f9f9fb;
+            background: var(--mmp-detail-bg);
             border-radius: 14px;
             padding: 14px 16px;
             margin-bottom: 20px;
-            border: 1px solid rgba(0,0,0,0.03);
+            border: 1px solid var(--mmp-border);
         }
-        .mmpay-detail { font-size: 0.85rem; color: #86868b; margin: 6px 0; display: flex; justify-content: space-between; align-items: center; }
-        .mmpay-detail strong { color: #1d1d1f; font-weight: 600; text-align: right; }
+        .mmpay-detail { font-size: 0.85rem; color: var(--mmp-text-sub); margin: 6px 0; display: flex; justify-content: space-between; align-items: center; }
+        .mmpay-detail strong { color: var(--mmp-text-main); font-weight: 600; text-align: right; }
         .mmpay-detail span { text-align: left; }
 
         .mmpay-timer-badge {
             color: #d93025;
-            background: #fce8e6;
+            background: var(--mmp-fail-bg);
             padding: 5px 12px;
             border-radius: 10px;
             font-size: 0.85rem;
@@ -336,7 +371,7 @@ export function _getContentQRDisplay(qrContainerId: string, merchantName: string
               </div>
           </div>
 
-          <button class="mmpay-button" onclick="MMPayDownloadQR()">
+          <button class="mmpay-button" style="background-color: ${downloadBtnColor} !important; color: #ffffff !important;" onclick="MMPayDownloadQR()">
               <span class="en-text">Download QR Code</span>
               <span class="mm-text">QR ကုဒ်ကို သိမ်းဆည်းမည်</span>
           </button>
@@ -344,10 +379,13 @@ export function _getContentQRDisplay(qrContainerId: string, merchantName: string
     `;
 }
 
-export function _getContentAfterModal(isSuccess: boolean, orderId: string, messageHtml: string): string {
+export function _getContentAfterModal(isSuccess: boolean, orderId: string, messageHtml: string, design?: IDesignOptions): string {
 
   const iconColor = isSuccess ? '#34c759' : '#ff3b30';
-  const iconBg = isSuccess ? '#e8f8ec' : '#fce8e6';
+  const iconBgVar = isSuccess ? 'var(--mmp-success-bg)' : 'var(--mmp-fail-bg)';
+
+  // Fixed ReferenceError: Removed undefined 'status' variable dependency
+  const isExpired = messageHtml.toLowerCase().includes('expire') || messageHtml.includes('သတ်မှတ်ချိန်ကုန်');
 
   let iconSvg: string;
   let statusTextEn: string;
@@ -360,8 +398,8 @@ export function _getContentAfterModal(isSuccess: boolean, orderId: string, messa
                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                  </svg>`;
   } else {
-    statusTextEn = status === 'FAILED' ? 'Failed' : 'Expired';
-    statusTextMm = status === 'FAILED' ? 'မအောင်မြင်ပါ' : 'အချိန်ကျော်လွန်သွားပါပြီ';
+    statusTextEn = isExpired ? 'Expired' : 'Failed';
+    statusTextMm = isExpired ? 'အချိန်ကျော်လွန်သွားပါပြီ' : 'မအောင်မြင်ပါ';
     iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="${iconColor}" stroke-width="3">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                  </svg>`;
@@ -380,7 +418,7 @@ export function _getContentAfterModal(isSuccess: boolean, orderId: string, messa
                 width: 72px;
                 height: 72px;
                 border-radius: 50%;
-                background: ${iconBg};
+                background: ${iconBgVar};
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -388,18 +426,18 @@ export function _getContentAfterModal(isSuccess: boolean, orderId: string, messa
                 ${iconSvg}
     </div>
 
-    <h2 style="font-size: 1.4rem; font-weight: 700; color: #1d1d1f; margin: 0 0 10px 0;">
+    <h2 style="font-size: 1.4rem; font-weight: 700; color: var(--mmp-text-main); margin: 0 0 10px 0;">
         <span class="en-text">${statusTextEn}</span>
         <span class="mm-text">${statusTextMm}</span>
     </h2>
 
-    <div style="background: #f9f9fb; padding: 8px 14px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.03); display: inline-block; margin-bottom: 24px;">
-        <p style="color: #86868b; font-size: 0.85rem; margin: 0; font-weight: 600;">
+    <div style="background: var(--mmp-detail-bg); padding: 8px 14px; border-radius: 10px; border: 1px solid var(--mmp-border); display: inline-block; margin-bottom: 24px;">
+        <p style="color: var(--mmp-text-sub); font-size: 0.85rem; margin: 0; font-weight: 600;">
                     ID: ${orderId}
         </p>
     </div>
 
-    <p style="color: #86868b; margin-top: 0; margin-bottom: 32px; font-size: 0.95rem; line-height: 1.5;">
+    <p style="color: var(--mmp-text-sub); margin-top: 0; margin-bottom: 32px; font-size: 0.95rem; line-height: 1.5;">
                 ${messageHtml}
     </p>
 
@@ -411,8 +449,7 @@ export function _getContentAfterModal(isSuccess: boolean, orderId: string, messa
 `;
 }
 
-
-export function _getPreloadScreen(): string {
+export function _getPreloadScreen(design?: IDesignOptions): string {
   return `
       <style>
         @keyframes mmpayGodSweep {
@@ -430,7 +467,7 @@ export function _getPreloadScreen(): string {
           align-items: center;
           justify-content: center;
           min-height: 290px;
-          background-color: #ffffff;
+          /* Background color removed so it natively inherits the card's theme bg */
         }
         .mmpay-brand-core {
           position: relative;
@@ -440,7 +477,7 @@ export function _getPreloadScreen(): string {
           justify-content: center;
         }
         .mmpay-loader-img {
-          width: 65px; /* Scaled down significantly for a premium feel */
+          width: 65px;
           height: auto;
           position: relative;
           z-index: 2;
@@ -449,7 +486,7 @@ export function _getPreloadScreen(): string {
         .mmpay-progress-track {
           width: 160px;
           height: 2px;
-          background: #f1f5f9;
+          background: var(--mmp-progress-track);
           border-radius: 2px;
           overflow: hidden;
           position: relative;
@@ -459,19 +496,19 @@ export function _getPreloadScreen(): string {
           position: absolute;
           top: 0; left: 0; bottom: 0;
           width: 40%;
-          background: linear-gradient(90deg, transparent, #0f172a, transparent);
+          background: var(--mmp-progress-ind);
           animation: mmpayGodSweep 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
         }
         .mmpay-preload-text {
           font-size: 0.85rem;
           font-weight: 700;
-          color: #0f172a;
+          color: var(--mmp-text-main);
           letter-spacing: 1px;
           text-transform: uppercase;
         }
         .mmpay-preload-subtext {
           font-size: 0.8rem;
-          color: #86868b;
+          color: var(--mmp-text-sub);
           margin-top: 6px;
           font-weight: 500;
         }
@@ -492,5 +529,5 @@ export function _getPreloadScreen(): string {
               <span class="en-text">Establishing end-to-end encryption...</span>
               <span class="mm-text">လုံခြုံရေးစနစ်များကို ချိတ်ဆက်နေသည်...</span>
           </div>
-      </div>`
+      </div>`;
 }

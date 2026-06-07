@@ -21,7 +21,6 @@ The `MMPaySDK` class provides two distinct methods to suit different integration
 ```javascript
 const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
     baseUrl:  'https://xxx.myanmyanpay.com', // Sign up with us and ask our team
-    environment:  'sandbox',
     merchantName:  'Your Shop Name',
 });
 ```
@@ -60,7 +59,6 @@ MMPayApp.showPaymentModal({
 ```javascript
 const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
     baseUrl:  'https://xxx.myanmyanpay.com', // Sign up with us and ask our team
-    environment:  'sandbox',
     merchantName:  'Your Shop Name',
 });
 MMPayApp.showPaymentModal({
@@ -148,7 +146,6 @@ export class MMPayService {
         }
         this.mmpay = new MMPaySDK('pk_test_123', {
             baseUrl:  'https://xxx.myanmyanpay.com', // Sign up with us and ask our tea
-            environment: 'sandbox',
             merchantName: 'Test Shop'
         });
     }
@@ -214,7 +211,6 @@ export const useMMPay = () => {
 
     mmpayRef.current = new MMPaySDK('pk_test_123', {
       baseUrl: 'https://xxx.myanmyanpay.com',
-      environment: 'sandbox',
       merchantName: 'Test Shop'
     });
   }, []);
@@ -289,7 +285,6 @@ onMounted(() => {
 
   mmpay.value = new MMPaySDK('pk_test_123', {
     baseUrl: 'https://xxx.myanmyanpay.com',
-    environment: 'sandbox',
     merchantName: 'Test Shop'
   });
 });

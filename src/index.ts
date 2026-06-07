@@ -6,6 +6,7 @@ import {
   ICreatePaymentResponse,
   ICreateTokenRequestParams,
   ICreateTokenResponse,
+  IDesignOptions,
   IPollingRequest,
   IPollingResponse,
   PolliongResult,
@@ -33,6 +34,7 @@ export class MMPaySDK {
   private countdownIntervalId: number | undefined = undefined;
   private onCompleteCallback: ((result: PolliongResult) => void) | null = null;
   private overlayElement: HTMLDivElement | null = null;
+  private design: IDesignOptions;
 
   private pendingApiResponse: ICreatePaymentResponse | null = null;
   private pendingPaymentPayload: ICreatePaymentRequestParams | null = null;
@@ -46,10 +48,22 @@ export class MMPaySDK {
       throw new Error("A Publishable Key is required to initialize [MMPaySDK].");
     }
     this.publishableKey = publishableKey;
-    this.environment = options.environment || 'production';
+
+    if (publishableKey.startsWith('pk_test_')) {
+      this.environment = 'sandbox';
+    } else if (publishableKey.startsWith('pk_live_')) {
+      this.environment = 'production';
+    }
+
     this.baseUrl = options.baseUrl || 'https://api.mm-pay.com';
     this.merchantName = options.merchantName || 'Your Merchant';
     this.POLL_INTERVAL_MS = options.pollInterval || 5000;
+
+    // Set design defaults as requested
+    this.design = {
+      mode: options.design?.mode || 'light',
+      color: options.design?.color || '#000000'
+    };
 
     if (typeof window !== 'undefined') {
       this._checkAndAutoResume();
@@ -115,7 +129,6 @@ export class MMPaySDK {
         : '/xpayments/production-token-request';
       return await this._callApi<ICreateTokenResponse>(endpoint, payload);
     } catch (error) {
-      console.error("Token request failed:", error);
       throw error;
     }
   }
@@ -127,7 +140,6 @@ export class MMPaySDK {
         : '/xpayments/production-payment-create';
       return await this._callApi<ICreatePaymentResponse>(endpoint, payload);
     } catch (error) {
-      console.error("Payment request failed:", error);
       throw error;
     }
   }
@@ -161,7 +173,6 @@ export class MMPaySDK {
       this.tokenKey = tokenResponse.token as string;
       return await this._callApiPaymentRequest(paymentPayload);
     } catch (error) {
-      console.error("Payment request failed:", error);
       throw error;
     }
   }
@@ -194,7 +205,7 @@ export class MMPaySDK {
       }
     }
 
-    this._createAndRenderModal(_getPreloadScreen(), false);
+    this._createAndRenderModal(_getPreloadScreen(this.design), false);
 
     const tokenPayload: ICreateTokenRequestParams = {
       amount: params.amount,
@@ -255,7 +266,7 @@ export class MMPaySDK {
     this.overlayElement = overlay;
 
     const style = document.createElement('style');
-    style.innerHTML = _getContentCoreCss();
+    style.innerHTML = _getContentCoreCss(this.design);
     overlay.appendChild(style);
     window.MMPayToggleLang = (lang) => {
       const modal = document.getElementById('mmpay-full-modal');
@@ -271,7 +282,6 @@ export class MMPaySDK {
               nonce: new Date().getTime().toString() + '_cancel'
             });
           } catch (e) {
-            console.error("Cancel API call failed", e);
           }
           this._clearCache();
         }
@@ -323,10 +333,9 @@ export class MMPaySDK {
           document.body.removeChild(link);
         }
       } catch (e) {
-        console.error("Failed to download QR image:", e);
       }
     }
-    const qrContentHtml = _getContentQRDisplay(qrContainerId, merchantName, formattedAmount, apiResponse);
+    const qrContentHtml = _getContentQRDisplay(qrContainerId, merchantName, formattedAmount, apiResponse, this.design);
     this._cleanupModal(false);
     this._createAndRenderModal(qrContentHtml, false);
     this._injectQrScript(qrData, qrContainerId);
@@ -335,7 +344,7 @@ export class MMPaySDK {
   private _showTerminalMessage(orderId: string, status: 'SUCCESS' | 'FAILED' | 'EXPIRED', messageHtml: string): void {
     this._cleanupModal(true);
     const isSuccess = status === 'SUCCESS';
-    const content = _getContentAfterModal(isSuccess, orderId, messageHtml)
+    const content = _getContentAfterModal(isSuccess, orderId, messageHtml, this.design)
     this._createAndRenderModal(content, true);
   }
 
@@ -351,7 +360,7 @@ export class MMPaySDK {
       cancelView.style.display = 'flex';
       return;
     }
-    const content = _getContentCancelModal();
+    const content = _getContentCancelModal(this.design);
     overlayContent.insertAdjacentHTML('beforeend', content);
   }
 
@@ -403,7 +412,6 @@ export class MMPaySDK {
           correctLevel: QRCode.CorrectLevel.H
         });
       } else {
-        console.error('Failed to load qrcode.js or find container.');
       }
     };
 
@@ -451,7 +459,6 @@ export class MMPaySDK {
           return;
         }
       } catch (error) {
-        console.error("Polling error:", error);
       }
     };
     checkStatus();
@@ -477,7 +484,6 @@ export class MMPaySDK {
 
     let currentRemaining = updateDisplay();
 
-    // Converted to async to guarantee execution context waits for network request
     this.countdownIntervalId = window.setInterval(async () => {
       currentRemaining = updateDisplay();
 

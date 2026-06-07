@@ -159,9 +159,12 @@
 
         const sdk = new MMPaySDK(PUBLISHABLE_KEY, {
             baseUrl: 'https://ezapi.myanmyanpay.com',
-            environment: 'sandbox',
             merchantName: 'Fastify E-Shop',
-            pollInterval: 5000
+            design: {
+                mode: 'dark',
+                color: '#00FF00'
+            },
+            pollInterval: 5000,
         });
 
         const mockOrder = {

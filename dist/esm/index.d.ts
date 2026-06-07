@@ -10,6 +10,7 @@ export declare class MMPaySDK {
     private countdownIntervalId;
     private onCompleteCallback;
     private overlayElement;
+    private design;
     private pendingApiResponse;
     private pendingPaymentPayload;
     private readonly QR_SIZE;
