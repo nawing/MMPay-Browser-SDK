@@ -46,7 +46,7 @@ MMPayApp.showPaymentModal({
     callbackUrl: 'https://yoursite.com/confirmation' // Optional [Default callback input in our console will be called if no specified]
 }, (result) => {
     if (result.success) {
-        console.log('Success: ' + result.transactionId);
+        console.log('Success: ' + result.orderId + ' : Transaction : ' + result.transactionId);
     }
     if (result.created) {
         console.log('Created: ' + result.orderId);
@@ -74,7 +74,7 @@ const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
     design: {
         mode: 'light', // dark | dark-translucent | light | light-translucent
         color: '#0000000' // #color code
-    },
+    }
 });
 MMPayApp.showPaymentModal({
     amount: 50000,
@@ -83,8 +83,7 @@ MMPayApp.showPaymentModal({
     callbackUrl: 'https://yoursite.com/confirmation' // Optional [Default callback input in our console will be called if no specified]
 }, (result) => {
     if (result.success) {
-        console.log('Success: ' + result.transactionId);
-        // Redirect ?
+        console.log('Success: ' + result.orderId + ' : Transaction : ' + result.transactionId);
     }
     if (result.created) {
         console.log('Created: ' + result.orderId);
@@ -114,6 +113,11 @@ MMPayApp.showPaymentModal({
 ### 3. Angular Framework Implementation
 
 #### **Example Implementation**
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/mmpay-browser-sdk@latest/dist/mmpay-sdk.js"></script>
+```
+
 ```typescript
 import {Injectable} from '@angular/core';
 
@@ -131,11 +135,8 @@ interface ModalResponse {
     created: boolean,
     cancelled: boolean,
     expired: boolean,
-    transaction: {
-        orderId: string;
-        transactionRefId: string;
-        status: 'PENDING' | 'SUCCESS' | 'FAILED' | 'EXPIRED';
-    }
+    orderId: string;
+    transactionRefId: string;
 }
 
 @Injectable({
@@ -172,8 +173,7 @@ export class MMPayService {
             customMessage,
         }, (result: ModalResponse) => {
             if (result.success) {
-                console.log('Success: ' + result.transactionId);
-                // Redirect ?
+                console.log('Success: ' + result.orderId + ' : Transaction : ' + result.transactionId);
             }
             if (result.created) {
                 console.log('Created: ' + result.orderId);
@@ -195,6 +195,11 @@ export class MMPayService {
 ### 4. React Framework Implementation
 
 #### **Example Implementation**
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/mmpay-browser-sdk@latest/dist/mmpay-sdk.js"></script>
+```
+
 ```tsx
 import React, { useEffect, useRef } from 'react';
 
@@ -205,17 +210,17 @@ export const useMMPay = () => {
     const MMPaySDK = window.MMPaySDK;
 
     if (!MMPaySDK) {
-      console.error('SDK not loaded attached to window');
-      return;
+        console.error('SDK not loaded attached to window');
+        return;
     }
 
     mmpayRef.current = new MMPaySDK('pk_test_123', {
-      baseUrl: 'https://xxx.myanmyanpay.com',
-      merchantName: 'Test Shop',
-    design: {
-        mode: 'dark-translucent', // dark | dark-translucent | light | light-translucent
-        color: '#E1A284' // #color code
-    }
+        baseUrl: 'https://xxx.myanmyanpay.com',
+        merchantName: 'Test Shop',
+        design: {
+            mode: 'dark-translucent', // dark | dark-translucent | light | light-translucent
+            color: '#E1A284' // #color code
+        }
     });
   }, []);
 
@@ -223,30 +228,23 @@ export const useMMPay = () => {
     if (!mmpayRef.current) return;
 
     mmpayRef.current.showPaymentModal({
-      amount,
-      orderId,
-      callbackUrl,
-      customMessage,
+        amount,
+        orderId,
+        callbackUrl,
+        customMessage,
     }, (result) => {
-      if (result.success) {
-        console.log('Redirect Some where');
-      }
-    });
-  };
-
-  const pay = (amount, orderId, callbackUrl, customMessage) => {
-    if (!mmpayRef.current) return;
-
-    mmpayRef.current.createPayment({
-      amount,
-      orderId,
-      callbackUrl,
-      customMessage,
-    })
-    .then((result) => {
-      if (result.qr) {
-        console.log('Transaction ID: ' + result.qr);
-      }
+        if (result.success) {
+            console.log('Success: ' + result.orderId + ' : Transaction : ' + result.transactionId);
+        }
+        if (result.created) {
+            console.log('Created: ' + result.orderId);
+        }
+        if (result.cancelled) {
+            console.log('Cancelled: ' + result.orderId);
+        }
+        if (result.expired) {
+            console.log('Expoired: ' + result.orderId);
+        }
     });
   };
 
@@ -254,17 +252,17 @@ export const useMMPay = () => {
 };
 
 export const Checkout = () => {
-  const { modalPay } = useMMPay();
+    const { modalPay } = useMMPay();
 
-  const handlePayment = () => {
-    modalPay(5000, `ORD-${Date.now()}`);
-  };
+    const handlePayment = () => {
+        modalPay(5000, `ORD-${Date.now()}`);
+    };
 
-  return (
-    <button onClick={handlePayment}>
-      Pay with MyanMyanPay
-    </button>
-  );
+    return (
+        <button onClick={handlePayment}>
+            Pay with MyanMyanPay
+        </button>
+    );
 };
 ```
 
@@ -272,6 +270,10 @@ export const Checkout = () => {
 ### 4. Vue Framework Implementation
 
 #### **Example Implementation**
+```html
+<script src="https://cdn.jsdelivr.net/npm/mmpay-browser-sdk@latest/dist/mmpay-sdk.js"></script>
+```
+
 ```vue
 
 <script setup>
@@ -280,58 +282,56 @@ import { onMounted, ref } from 'vue';
 const mmpay = ref(null);
 
 onMounted(() => {
-  const MMPaySDK = window.MMPaySDK;
+    const MMPaySDK = window.MMPaySDK;
 
-  if (!MMPaySDK) {
-    console.error('SDK not loaded attached to window');
-    return;
-  }
+    if (!MMPaySDK) {
+        console.error('SDK not loaded attached to window');
+        return;
+    }
 
-  mmpay.value = new MMPaySDK('pk_test_123', {
-    baseUrl: 'https://xxx.myanmyanpay.com',
-    merchantName: 'Test Shop'
-  });
+    mmpay.value = new MMPaySDK('pk_test_123', {
+        baseUrl: 'https://xxx.myanmyanpay.com',
+        merchantName: 'Test Shop',
+        design: {
+            mode: 'light', // dark | dark-translucent | light | light-translucent
+            color: '#BF40BF' // #color code
+        }
+    });
 });
 
 const modalPay = (amount, orderId, callbackUrl, customMessage) => {
-  if (!mmpay.value) return;
+    if (!mmpay.value) return;
 
-  mmpay.value.showPaymentModal({
-    amount,
-    orderId,
-    callbackUrl,
-    customMessage,
-  }, (result) => {
-    if (result.success) {
-      console.log('Redirect Some where');
-    }
-  });
-};
-
-const pay = (amount, orderId, callbackUrl, customMessage) => {
-  if (!mmpay.value) return;
-
-  mmpay.value.createPayment({
-    amount,
-    orderId,
-    callbackUrl,
-    customMessage,
-  }).then((result) => {
-    if (result.qr) {
-      console.log('Transaction ID: ' + result.qr);
-    }
-  });
+    mmpay.value.showPaymentModal({
+        amount,
+        orderId,
+        callbackUrl,
+        customMessage,
+    }, (result) => {
+        if (result.success) {
+            console.log('Success: ' + result.orderId + ' : Transaction : ' + result.transactionId);
+        }
+        if (result.created) {
+            console.log('Created: ' + result.orderId);
+        }
+        if (result.cancelled) {
+            console.log('Cancelled: ' + result.orderId);
+        }
+        if (result.expired) {
+            console.log('Expoired: ' + result.orderId);
+        }
+    });
 };
 
 const handlePayment = () => {
-  modalPay(5000, `ORD-${Date.now()}`);
+    modalPay(5000, `ORD-${Date.now()}`);
 };
 </script>
 
 <template>
-  <button @click="handlePayment">
-    Pay with MyanMyanPay
-  </button>
+    <button @click="handlePayment">
+        Pay with MyanMyanPay
+    </button>
 </template>
 
 ```
