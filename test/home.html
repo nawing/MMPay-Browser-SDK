@@ -131,7 +131,6 @@
                 await sdk.showPaymentModal({
                     amount: parseFloat(finalAmount.toFixed(2)),
                     orderId: 'FSTY' + Date.now(),
-                    callbackUrl: 'https://your-fastify-backend.com/api/mmpay/webhook'
                 }, (result) => {
                     console.log(result)
                     if (result.success) {

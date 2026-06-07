@@ -468,7 +468,7 @@ export class MMPaySDK {
           height: this.QR_SIZE,
           colorDark: "#000000",
           colorLight: "#ffffff",
-          correctLevel: QRCode.CorrectLevel.H
+          correctLevel: QRCode.CorrectLevel.L
         });
       } else {
       }
