@@ -132,10 +132,6 @@ var MMPaySDK = /** @class */ (function () {
             var parsed = JSON.parse(cachedData);
             if (Date.now() >= parsed.expireAt) {
                 this.tokenKey = parsed.token;
-                this._callApiExpirePayment({
-                    orderId: parsed.payload.orderId,
-                    nonce: new Date().getTime().toString() + '_expire_auto'
-                }).catch(function (e) { return console.error("Auto-resume expire call failed:", e); });
                 this._clearCache();
                 return;
             }
@@ -246,21 +242,6 @@ var MMPaySDK = /** @class */ (function () {
             });
         });
     };
-    MMPaySDK.prototype._callApiExpirePayment = function (payload) {
-        return __awaiter(this, void 0, void 0, function () {
-            var endpoint;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        endpoint = this.environment === 'sandbox'
-                            ? '/xpayments/sandbox-payment-expire'
-                            : '/xpayments/production-payment-expire';
-                        return [4 /*yield*/, this._callApi(endpoint, payload)];
-                    case 1: return [2 /*return*/, _a.sent()];
-                }
-            });
-        });
-    };
     MMPaySDK.prototype._clearCache = function () {
         localStorage.removeItem(this.CACHE_KEY);
     };
@@ -302,51 +283,34 @@ var MMPaySDK = /** @class */ (function () {
     };
     MMPaySDK.prototype.showPaymentModal = function (params, onComplete) {
         return __awaiter(this, void 0, void 0, function () {
-            var cachedData, parsed, e_1, tokenPayload, paymentPayload, expireAt, apiCallSequence, apiResponse;
+            var cachedData, parsed, tokenPayload, paymentPayload, expireAt, apiCallSequence, apiResponse;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         this.onCompleteCallback = onComplete;
                         cachedData = localStorage.getItem(this.CACHE_KEY);
-                        if (!cachedData) return [3 /*break*/, 9];
-                        _a.label = 1;
-                    case 1:
-                        _a.trys.push([1, 8, , 9]);
-                        parsed = JSON.parse(cachedData);
-                        if (!(Date.now() < parsed.expireAt)) return [3 /*break*/, 2];
-                        this.tokenKey = parsed.token;
-                        this.pendingPaymentPayload = parsed.payload;
-                        this.pendingApiResponse = parsed.apiResponse;
-                        this._renderQrModalContent(this.pendingApiResponse, this.pendingPaymentPayload, this.merchantName);
-                        this._startPolling(this.pendingPaymentPayload, onComplete);
-                        this._startCountdown(this.pendingPaymentPayload.orderId, parsed.expireAt);
-                        return [2 /*return*/];
-                    case 2:
-                        this.tokenKey = parsed.token;
-                        _a.label = 3;
-                    case 3:
-                        _a.trys.push([3, 5, , 6]);
-                        return [4 /*yield*/, this._callApiExpirePayment({
-                                orderId: parsed.payload.orderId,
-                                nonce: new Date().getTime().toString() + '_expire_modal'
-                            })];
-                    case 4:
-                        _a.sent();
-                        return [3 /*break*/, 6];
-                    case 5:
-                        e_1 = _a.sent();
-                        console.error("Modal check expire call failed:", e_1);
-                        return [3 /*break*/, 6];
-                    case 6:
-                        this._clearCache();
-                        _a.label = 7;
-                    case 7: return [3 /*break*/, 9];
-                    case 8:
-                        _a.sent();
-                        this._clearCache();
-                        return [3 /*break*/, 9];
-                    case 9:
+                        if (cachedData) {
+                            try {
+                                parsed = JSON.parse(cachedData);
+                                if (Date.now() < parsed.expireAt) {
+                                    this.tokenKey = parsed.token;
+                                    this.pendingPaymentPayload = parsed.payload;
+                                    this.pendingApiResponse = parsed.apiResponse;
+                                    this._renderQrModalContent(this.pendingApiResponse, this.pendingPaymentPayload, this.merchantName);
+                                    this._startPolling(this.pendingPaymentPayload, onComplete);
+                                    this._startCountdown(this.pendingPaymentPayload.orderId, parsed.expireAt);
+                                    return [2 /*return*/];
+                                }
+                                else {
+                                    this.tokenKey = parsed.token;
+                                    this._clearCache();
+                                }
+                            }
+                            catch (e) {
+                                this._clearCache();
+                            }
+                        }
                         this._createAndRenderModal(_getPreloadScreen(), false);
                         tokenPayload = {
                             amount: params.amount,
@@ -361,9 +325,9 @@ var MMPaySDK = /** @class */ (function () {
                             nonce: new Date().getTime().toString() + '_mmp'
                         };
                         expireAt = Date.now() + (this.TIMEOUT_SECONDS * 1000);
-                        _a.label = 10;
-                    case 10:
-                        _a.trys.push([10, 12, , 13]);
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 3, , 4]);
                         apiCallSequence = function () { return __awaiter(_this, void 0, void 0, function () {
                             var tokenResponse;
                             return __generator(this, function (_a) {
@@ -381,7 +345,7 @@ var MMPaySDK = /** @class */ (function () {
                                 apiCallSequence(),
                                 new Promise(function (resolve) { return setTimeout(resolve, 1500); })
                             ])];
-                    case 11:
+                    case 2:
                         apiResponse = (_a.sent())[0];
                         if (apiResponse && apiResponse.qr && apiResponse.transactionRefId) {
                             this.pendingApiResponse = apiResponse;
@@ -399,13 +363,13 @@ var MMPaySDK = /** @class */ (function () {
                         else {
                             this._showTerminalMessage(apiResponse.orderId || 'N/A', 'FAILED', '<span class="en-text">Failed to start payment. No QR data.</span><span class="mm-text">ငွေပေးချေမှု စတင်ရန် မအောင်မြင်ပါ။ QR ဒေတာ မရရှိပါ။</span>');
                         }
-                        return [3 /*break*/, 13];
-                    case 12:
+                        return [3 /*break*/, 4];
+                    case 3:
                         _a.sent();
                         this.tokenKey = null;
                         this._showTerminalMessage(paymentPayload.orderId || 'N/A', 'FAILED', '<span class="en-text">Error occurred while starting payment.</span><span class="mm-text">ငွေပေးချေမှု စတင်စဉ် အမှားအယွင်း ဖြစ်ပွားသည်။</span>');
-                        return [3 /*break*/, 13];
-                    case 13: return [2 /*return*/];
+                        return [3 /*break*/, 4];
+                    case 4: return [2 /*return*/];
                 }
             });
         });
@@ -433,7 +397,7 @@ var MMPaySDK = /** @class */ (function () {
                 args_1[_i] = arguments[_i];
             }
             return __awaiter(_this, __spreadArray([], args_1, true), void 0, function (forceClose) {
-                var e_3;
+                var e_1;
                 if (forceClose === void 0) { forceClose = false; }
                 return __generator(this, function (_a) {
                     switch (_a.label) {
@@ -451,8 +415,8 @@ var MMPaySDK = /** @class */ (function () {
                             _a.sent();
                             return [3 /*break*/, 4];
                         case 3:
-                            e_3 = _a.sent();
-                            console.error("Cancel API call failed", e_3);
+                            e_1 = _a.sent();
+                            console.error("Cancel API call failed", e_1);
                             return [3 /*break*/, 4];
                         case 4:
                             this._clearCache();
@@ -667,39 +631,19 @@ var MMPaySDK = /** @class */ (function () {
         var currentRemaining = updateDisplay();
         // Converted to async to guarantee execution context waits for network request
         this.countdownIntervalId = window.setInterval(function () { return __awaiter(_this, void 0, void 0, function () {
-            var response, e_4;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        currentRemaining = updateDisplay();
-                        if (!(currentRemaining <= 0)) return [3 /*break*/, 4];
-                        window.clearInterval(this.countdownIntervalId);
-                        this.countdownIntervalId = undefined;
-                        // CRITICAL FIX: Stop polling immediately so it doesn't fire an HTTP request
-                        // at the exact same time as the expire request.
-                        if (this.pollIntervalId !== undefined) {
-                            window.clearInterval(this.pollIntervalId);
-                            this.pollIntervalId = undefined;
-                        }
-                        this._clearCache();
-                        this._showTerminalMessage(orderId, 'EXPIRED', '<span class="en-text">Time expired.</span><span class="mm-text">သတ်မှတ်ချိန်ကုန်သွားပါပြီ။</span>');
-                        _a.label = 1;
-                    case 1:
-                        _a.trys.push([1, 3, , 4]);
-                        return [4 /*yield*/, this._callApiExpirePayment({
-                                orderId: orderId,
-                                nonce: new Date().getTime().toString() + '_expire'
-                            })];
-                    case 2:
-                        response = _a.sent();
-                        console.log(response);
-                        return [3 /*break*/, 4];
-                    case 3:
-                        e_4 = _a.sent();
-                        console.error("Expire API call failed", e_4);
-                        return [3 /*break*/, 4];
-                    case 4: return [2 /*return*/];
+                currentRemaining = updateDisplay();
+                if (currentRemaining <= 0) {
+                    window.clearInterval(this.countdownIntervalId);
+                    this.countdownIntervalId = undefined;
+                    if (this.pollIntervalId !== undefined) {
+                        window.clearInterval(this.pollIntervalId);
+                        this.pollIntervalId = undefined;
+                    }
+                    this._clearCache();
+                    this._showTerminalMessage(orderId, 'EXPIRED', '<span class="en-text">Time expired.</span><span class="mm-text">သတ်မှတ်ချိန်ကုန်သွားပါပြီ။</span>');
                 }
+                return [2 /*return*/];
             });
         }); }, 1000);
     };

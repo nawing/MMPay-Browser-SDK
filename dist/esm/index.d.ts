@@ -21,7 +21,6 @@ export declare class MMPaySDK {
     private _callApiTokenRequest;
     private _callApiPaymentRequest;
     private _callApiCancelPayment;
-    private _callApiExpirePayment;
     private _clearCache;
     createPayment(params: ICreatePaymentRequestParams): Promise<ICreatePaymentResponse>;
     showPaymentModal(params: ICreatePaymentRequestParams, onComplete: (result: PolliongResult) => void): Promise<void>;
