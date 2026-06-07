@@ -59,10 +59,9 @@ export class MMPayUI {
     this.injectQrScript(apiResponse.qr, qrContainerId);
   }
 
-  public showTerminalMessage(orderId: string, status: 'SUCCESS' | 'FAILED' | 'EXPIRED', messageHtml: string, bindHandlers: any): void {
+  public showTerminalMessage(orderId: string, status: 'SUCCESS' | 'FAILED' | 'EXPIRED' | 'CANCELLED', messageHtml: string, bindHandlers: any): void {
     this.cleanupModal(true);
-    const isSuccess = status === 'SUCCESS';
-    const content = _getContentAfterModal(isSuccess, orderId, messageHtml, this.design);
+    const content = _getContentAfterModal(status, orderId, messageHtml, this.design);
     this.createAndRenderModal(content, bindHandlers);
   }
 

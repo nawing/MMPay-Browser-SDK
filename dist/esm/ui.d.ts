@@ -8,7 +8,7 @@ export declare class MMPayUI {
     createAndRenderModal(contentHtml: string, bindHandlers: any): HTMLDivElement;
     renderPreloadScreen(bindHandlers: any): void;
     renderQrModalContent(apiResponse: any, orderId: string, merchantName: string, bindHandlers: any): void;
-    showTerminalMessage(orderId: string, status: 'SUCCESS' | 'FAILED' | 'EXPIRED', messageHtml: string, bindHandlers: any): void;
+    showTerminalMessage(orderId: string, status: 'SUCCESS' | 'FAILED' | 'EXPIRED' | 'CANCELLED', messageHtml: string, bindHandlers: any): void;
     showCancelConfirmationModal(): void;
     reRenderPendingModalInstance(): void;
     cleanupModal(restoreBodyScroll: boolean): void;

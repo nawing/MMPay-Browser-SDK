@@ -60,15 +60,6 @@ export interface ICancelPaymentResponse {
   success: boolean;
 }
 
-export interface IExpiryPaymentRequestParams {
-  orderId: string;
-  nonce: string;
-}
-
-export interface IExpiryPaymentResponse {
-  success: boolean;
-}
-
 export interface IPollingRequest {
   orderId: string;
   nonce: string;

@@ -192,13 +192,17 @@
         return "\n@import url('https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&display=swap');\n#mmpay-full-modal {\n  --mmp-card-bg: ".concat(cardBg, ";\n  --mmp-card-backdrop: ").concat(backdrop, ";\n  --mmp-text-main: ").concat(isDark ? '#f5f5f7' : '#1d1d1f', ";\n  --mmp-text-sub: ").concat(isDark ? 'rgba(235, 235, 245, 0.6)' : '#86868b', ";\n  --mmp-border: ").concat(isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)', ";\n  --mmp-btn-main-bg: ").concat(isDark ? '#ffffff' : '#3a3a3c', ";\n  --mmp-btn-main-text: ").concat(isDark ? '#000000' : '#ffffff', ";\n  --mmp-btn-sec-bg: ").concat(isDark ? '#2c2c2e' : '#ffffff', ";\n  --mmp-btn-sec-text: ").concat(isDark ? '#f5f5f7' : '#1d1d1f', ";\n  --mmp-btn-sec-border: ").concat(isDark ? '#3a3a3c' : '#e5e5ea', ";\n  --mmp-detail-bg: ").concat(isDark ? '#2c2c2e' : '#f9f9fb', ";\n  --mmp-toggle-bg: ").concat(isDark ? '#2c2c2e' : '#f5f5f7', ";\n  --mmp-toggle-btn-active: ").concat(isDark ? '#636366' : '#ffffff', ";\n  --mmp-toggle-btn-text: ").concat(isDark ? '#ffffff' : '#1d1d1f', ";\n  --mmp-progress-track: ").concat(isDark ? '#2c2c2e' : '#f1f5f9', ";\n  --mmp-progress-ind: ").concat(isDark ? 'linear-gradient(90deg, transparent, #ffffff, transparent)' : 'linear-gradient(90deg, transparent, #0f172a, transparent)', ";\n  --mmp-success-bg: ").concat(isDark ? 'rgba(52, 199, 89, 0.2)' : '#e8f8ec', ";\n  --mmp-fail-bg: ").concat(isDark ? 'rgba(255, 59, 48, 0.2)' : '#fce8e6', ";\n  --mmp-warn-bg: ").concat(isDark ? 'rgba(255, 149, 0, 0.2)' : '#fff4e5', ";\n  --mmp-close-btn-hover: ").concat(isDark ? '#3a3a3c' : '#e5e5ea', ";\n\n  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;\n  background-color: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);\n  z-index: 99999; display: flex; align-items: center; justify-content: center;\n  transition: opacity 0.2s ease; box-sizing: border-box; padding: 16px;\n  font-family: -apple-system, BlinkMacSystemFont, \"SF Pro Text\", \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif, 'Padauk';\n}\n.mmpay-lang-en .mm-text { display: none !important; }\n.mmpay-lang-mm .en-text { display: none !important; }\n.mmpay-toggle-container {\n  position: absolute; top: 16px; left: 16px; display: flex; background: var(--mmp-toggle-bg);\n  border-radius: 10px; padding: 3px; z-index: 10; border: 1px solid var(--mmp-border);\n}\n.mmpay-toggle-btn {\n  font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 0.75rem; font-weight: 600;\n  padding: 5px 10px; border-radius: 8px; cursor: pointer; color: var(--mmp-text-sub); border: none; background: transparent; transition: all 0.2s ease;\n}\n.mmpay-lang-en .btn-en, .mmpay-lang-mm .btn-mm { background: var(--mmp-toggle-btn-active); color: var(--mmp-toggle-btn-text); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }\n.mmpay-overlay-content { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }\n.mmpay-card {\n  background: var(--mmp-card-bg); backdrop-filter: var(--mmp-card-backdrop); -webkit-backdrop-filter: var(--mmp-card-backdrop);\n  border-radius: 24px; box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12), 0 0 0 1px var(--mmp-border);\n  text-align: center; animation: mmpayFadeIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); box-sizing: border-box;\n  position: relative; width: 100%; max-width: 360px; overflow: hidden; display: flex; flex-direction: column;\n}\n@keyframes mmpayFadeIn { from { opacity: 0; transform: translateY(20px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }\n.mmpay-close-btn {\n  position: absolute; top: 16px; right: 16px; background: var(--mmp-toggle-bg); border: none; cursor: pointer; padding: 0;\n  color: var(--mmp-text-sub); border-radius: 50%; transition: all 0.2s ease; z-index: 10; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;\n}\n.mmpay-close-btn:hover { background-color: var(--mmp-close-btn-hover); color: var(--mmp-text-main); }\n.mmpay-button {\n  background: var(--mmp-btn-main-bg); color: var(--mmp-btn-main-text); border: none; padding: 14px 20px; border-radius: 14px;\n  font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 10px; transition: all 0.2s ease; width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n}\n.mmpay-button:hover { filter: brightness(1.1); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2); }\n.mmpay-button:active { transform: scale(0.98); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }\n.mmpay-button-secondary { background: var(--mmp-btn-sec-bg); color: var(--mmp-btn-sec-text); border: 1px solid var(--mmp-btn-sec-border); box-shadow: none; }\n.mmpay-button-secondary:hover { background: var(--mmp-toggle-bg); box-shadow: none;}\n.mmpay-button-danger { background: var(--mmp-fail-bg); color: #ff3b30; box-shadow: none; }\n.mmpay-button-danger:hover { filter: brightness(0.95); box-shadow: none;}\n");
     }
     function _getContentQRDisplay(qrContainerId, merchantName, formattedAmount, apiResponse, design) {
-        var downloadBtnColor = (design === null || design === void 0 ? void 0 : design.color) || '#000000';
-        return "\n      <style>\n        .mmpay-qr-view { padding: 64px 20px 24px 20px; box-sizing: border-box; width: 100%; display: flex; flex-direction: column; justify-content: center; }\n        .mmpay-header { color: var(--mmp-text-sub); font-size: 1rem; font-weight: 500; margin-bottom: 6px; }\n        .mmpay-amount-wrapper { margin: 0 auto 16px auto; display: flex; align-items: baseline; justify-content: center; gap: 6px; }\n        .mmpay-amount-value { font-size: 1.85rem; font-weight: 700; color: var(--mmp-text-main); letter-spacing: -0.5px; line-height: 1; }\n        .mmpay-amount-currency { font-size: 0.95rem; font-weight: 600; color: var(--mmp-text-sub); text-transform: uppercase; letter-spacing: 0.5px; }\n        .mmpay-qr-container { width: 220px; height: 220px; padding: 12px; margin: 0 auto; display: flex; justify-content: center; align-items: center; background: #ffffff; border-radius: 16px; border: 1px solid var(--mmp-border); box-shadow: 0 8px 24px rgba(0,0,0,0.04); box-sizing: border-box; overflow: hidden; }\n        #".concat(qrContainerId, " { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }\n        #").concat(qrContainerId, " canvas, #").concat(qrContainerId, " img { max-width: 100%; max-height: 100%; object-fit: contain; }\n        .mmpay-powered-text { font-size: 0.75rem; color: var(--mmp-text-sub); font-weight: 500; margin: 12px auto 8px auto;}\n        .mmpay-detail-box { background: var(--mmp-detail-bg); border-radius: 14px; padding: 14px 16px; margin-bottom: 20px; border: 1px solid var(--mmp-border); }\n        .mmpay-detail { font-size: 0.85rem; color: var(--mmp-text-sub); margin: 6px 0; display: flex; justify-content: space-between; align-items: center; }\n        .mmpay-detail strong { color: var(--mmp-text-main); font-weight: 600; text-align: right; }\n        .mmpay-detail span { text-align: left; }\n        .mmpay-timer-badge { color: #d93025; background: var(--mmp-fail-bg); padding: 5px 12px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin: 0 auto 16px auto; }\n        .mmpay-timer-icon { width: 14px; height: 14px; fill: currentColor; }\n      </style>\n      <div class=\"mmpay-card mmpay-qr-view\">\n          <div class=\"mmpay-toggle-container\">\n              <button class=\"mmpay-toggle-btn btn-en\" onclick=\"MMPayToggleLang('en')\">EN</button>\n              <button class=\"mmpay-toggle-btn btn-mm\" onclick=\"MMPayToggleLang('mm')\">MM</button>\n          </div>\n          <button class=\"mmpay-close-btn\" onclick=\"MMPayCloseModal(false)\">\n              <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"2.5\">\n                  <path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M6 18L18 6M6 6l12 12\"/>\n              </svg>\n          </button>\n          <div style=\"margin: 0 auto 16px auto; display: flex; align-items: center; justify-content: center;\">\n            <img src=\"https://motephoe.com/images/mmqr.webp\" alt=\"MyanMyanPay Logo\" style=\"height: 40px; width: auto; object-fit: contain;\">\n          </div>\n          <div class=\"mmpay-header\">").concat(merchantName, "</div>\n          <div class=\"mmpay-amount-wrapper\">\n              <span class=\"mmpay-amount-value\">").concat(formattedAmount, "</span>\n              <span class=\"mmpay-amount-currency\">MMK</span>\n          </div>\n          <div class=\"mmpay-qr-container\">\n              <div id=\"").concat(qrContainerId, "\"></div>\n          </div>\n          <div class=\"mmpay-powered-text\">\n              <span class=\"en-text\">Payment powered by MyanMyanPay</span>\n              <span class=\"mm-text\">MyanMyanPay \u1016\u103C\u1004\u1037\u103A \u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F\u1000\u102D\u102F \u1011\u1031\u102C\u1000\u103A\u1015\u1036\u1037\u1011\u102C\u1038\u101E\u100A\u103A</span>\n          </div>\n          <div class=\"mmpay-timer-badge\" id=\"mmpay-timer-badge\">\n             <svg class=\"mmpay-timer-icon\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\">\n               <path d=\"M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z\"/>\n               <path d=\"M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z\"/>\n             </svg>\n             <span id=\"mmpay-countdown-text\">05:00</span>\n          </div>\n          <div class=\"mmpay-detail-box\">\n              <div class=\"mmpay-detail\">\n                  <span><span class=\"en-text\">Order ID</span><span class=\"mm-text\">\u1019\u103E\u102C\u101A\u1030\u1019\u103E\u102F\u1014\u1036\u1015\u102B\u1010\u103A</span></span>\n                  <strong>").concat(apiResponse.orderId, "</strong>\n              </div>\n              <div class=\"mmpay-detail\" style=\"margin-top: 8px;\">\n                  <span><span class=\"en-text\">Transaction Ref</span><span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1004\u103D\u1031\u101A\u1030\u1014\u1036\u1015\u102B\u1010\u103A</span></span>\n                  <strong>").concat(apiResponse.transactionRefId, "</strong>\n              </div>\n          </div>\n          <button class=\"mmpay-button\" style=\"background-color: ").concat(downloadBtnColor, " !important; color: #ffffff !important;\" onclick=\"MMPayDownloadQR()\">\n              <span class=\"en-text\">Download QR Code</span>\n              <span class=\"mm-text\">QR \u1000\u102F\u1012\u103A\u1000\u102D\u102F \u101E\u102D\u1019\u103A\u1038\u1006\u100A\u103A\u1038\u1019\u100A\u103A</span>\n          </button>\n      </div>\n    ");
+        var customBtnStyle = '';
+        if (design === null || design === void 0 ? void 0 : design.color) {
+            customBtnStyle = "style=\"background-color: ".concat(design.color, " !important; color: #ffffff !important;\"");
+        }
+        return "\n      <style>\n        .mmpay-qr-view { padding: 64px 20px 24px 20px; box-sizing: border-box; width: 100%; display: flex; flex-direction: column; justify-content: center; }\n        .mmpay-header { color: var(--mmp-text-sub); font-size: 1rem; font-weight: 500; margin-bottom: 6px; }\n        .mmpay-amount-wrapper { margin: 0 auto 16px auto; display: flex; align-items: baseline; justify-content: center; gap: 6px; }\n        .mmpay-amount-value { font-size: 1.85rem; font-weight: 700; color: var(--mmp-text-main); letter-spacing: -0.5px; line-height: 1; }\n        .mmpay-amount-currency { font-size: 0.95rem; font-weight: 600; color: var(--mmp-text-sub); text-transform: uppercase; letter-spacing: 0.5px; }\n        .mmpay-qr-container { width: 220px; height: 220px; padding: 12px; margin: 0 auto; display: flex; justify-content: center; align-items: center; background: #ffffff; border-radius: 16px; border: 1px solid var(--mmp-border); box-shadow: 0 8px 24px rgba(0,0,0,0.04); box-sizing: border-box; overflow: hidden; }\n        #".concat(qrContainerId, " { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }\n        #").concat(qrContainerId, " canvas, #").concat(qrContainerId, " img { max-width: 100%; max-height: 100%; object-fit: contain; }\n        .mmpay-powered-text { font-size: 0.75rem; color: var(--mmp-text-sub); font-weight: 500; margin: 12px auto 8px auto;}\n        .mmpay-detail-box { background: var(--mmp-detail-bg); border-radius: 14px; padding: 14px 16px; margin-bottom: 20px; border: 1px solid var(--mmp-border); }\n        .mmpay-detail { font-size: 0.85rem; color: var(--mmp-text-sub); margin: 6px 0; display: flex; justify-content: space-between; align-items: center; }\n        .mmpay-detail strong { color: var(--mmp-text-main); font-weight: 600; text-align: right; }\n        .mmpay-detail span { text-align: left; }\n        .mmpay-timer-badge { color: #d93025; background: var(--mmp-fail-bg); padding: 5px 12px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin: 0 auto 16px auto; }\n        .mmpay-timer-icon { width: 14px; height: 14px; fill: currentColor; }\n      </style>\n      <div class=\"mmpay-card mmpay-qr-view\">\n          <div class=\"mmpay-toggle-container\">\n              <button class=\"mmpay-toggle-btn btn-en\" onclick=\"MMPayToggleLang('en')\">EN</button>\n              <button class=\"mmpay-toggle-btn btn-mm\" onclick=\"MMPayToggleLang('mm')\">MM</button>\n          </div>\n          <button class=\"mmpay-close-btn\" onclick=\"MMPayCloseModal(false)\">\n              <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"2.5\">\n                  <path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M6 18L18 6M6 6l12 12\"/>\n              </svg>\n          </button>\n          <div style=\"margin: 0 auto 16px auto; display: flex; align-items: center; justify-content: center;\">\n            <img src=\"https://motephoe.com/images/mmqr.webp\" alt=\"MyanMyanPay Logo\" style=\"height: 40px; width: auto; object-fit: contain;\">\n          </div>\n          <div class=\"mmpay-header\">").concat(merchantName, "</div>\n          <div class=\"mmpay-amount-wrapper\">\n              <span class=\"mmpay-amount-value\">").concat(formattedAmount, "</span>\n              <span class=\"mmpay-amount-currency\">MMK</span>\n          </div>\n          <div class=\"mmpay-qr-container\">\n              <div id=\"").concat(qrContainerId, "\"></div>\n          </div>\n          <div class=\"mmpay-powered-text\">\n              <span class=\"en-text\">Payment powered by MyanMyanPay</span>\n              <span class=\"mm-text\">MyanMyanPay \u1016\u103C\u1004\u1037\u103A \u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F\u1000\u102D\u102F \u1011\u1031\u102C\u1000\u103A\u1015\u1036\u1037\u1011\u102C\u1038\u101E\u100A\u103A</span>\n          </div>\n          <div class=\"mmpay-timer-badge\" id=\"mmpay-timer-badge\">\n             <svg class=\"mmpay-timer-icon\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\">\n               <path d=\"M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z\"/>\n               <path d=\"M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z\"/>\n             </svg>\n             <span id=\"mmpay-countdown-text\">05:00</span>\n          </div>\n          <div class=\"mmpay-detail-box\">\n              <div class=\"mmpay-detail\">\n                  <span><span class=\"en-text\">Order ID</span><span class=\"mm-text\">\u1019\u103E\u102C\u101A\u1030\u1019\u103E\u102F\u1014\u1036\u1015\u102B\u1010\u103A</span></span>\n                  <strong>").concat(apiResponse.orderId, "</strong>\n              </div>\n              <div class=\"mmpay-detail\" style=\"margin-top: 8px;\">\n                  <span><span class=\"en-text\">Transaction Ref</span><span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1004\u103D\u1031\u101A\u1030\u1014\u1036\u1015\u102B\u1010\u103A</span></span>\n                  <strong>").concat(apiResponse.transactionRefId, "</strong>\n              </div>\n          </div>\n          <button class=\"mmpay-button\" ").concat(customBtnStyle, " onclick=\"MMPayDownloadQR()\">\n              <span class=\"en-text\">Download QR Code</span>\n              <span class=\"mm-text\">QR \u1000\u102F\u1012\u103A\u1000\u102D\u102F \u101E\u102D\u1019\u103A\u1038\u1006\u100A\u103A\u1038\u1019\u100A\u103A</span>\n          </button>\n      </div>\n    ");
     }
-    function _getContentAfterModal(isSuccess, orderId, messageHtml, design) {
-        var iconColor = isSuccess ? '#34c759' : '#ff3b30';
-        var iconBgVar = isSuccess ? 'var(--mmp-success-bg)' : 'var(--mmp-fail-bg)';
-        var isExpired = messageHtml.toLowerCase().includes('expire') || messageHtml.includes('သတ်မှတ်ချိန်ကုန်');
+    function _getContentAfterModal(status, orderId, messageHtml, design) {
+        var isSuccess = status === 'SUCCESS';
+        var isCancelled = status === 'CANCELLED';
+        var iconColor = isSuccess ? '#34c759' : (isCancelled ? '#ff9500' : '#ff3b30');
+        var iconBgVar = isSuccess ? 'var(--mmp-success-bg)' : (isCancelled ? 'var(--mmp-warn-bg)' : 'var(--mmp-fail-bg)');
         var iconSvg;
         var statusTextEn;
         var statusTextMm;
@@ -207,9 +211,14 @@
             statusTextMm = 'အောင်မြင်ပါသည်';
             iconSvg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"36\" height=\"36\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"".concat(iconColor, "\" stroke-width=\"3\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M5 13l4 4L19 7\" /></svg>");
         }
+        else if (isCancelled) {
+            statusTextEn = 'Cancelled';
+            statusTextMm = 'ပယ်ဖျက်လိုက်ပါသည်';
+            iconSvg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"36\" height=\"36\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"".concat(iconColor, "\" stroke-width=\"2.5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636\" /></svg>");
+        }
         else {
-            statusTextEn = isExpired ? 'Expired' : 'Failed';
-            statusTextMm = isExpired ? 'အချိန်ကျော်လွန်သွားပါပြီ' : 'မအောင်မြင်ပါ';
+            statusTextEn = status === 'EXPIRED' ? 'Expired' : 'Failed';
+            statusTextMm = status === 'EXPIRED' ? 'အချိန်ကျော်လွန်သွားပါပြီ' : 'မအောင်မြင်ပါ';
             iconSvg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"36\" height=\"36\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"".concat(iconColor, "\" stroke-width=\"3\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M6 18L18 6M6 6l12 12\" /></svg>");
         }
         return "\n<div class=\"mmpay-card\" style=\"padding: 64px 24px 32px 24px; box-sizing: border-box; width: 100%;\">\n    <div class=\"mmpay-toggle-container\">\n        <button class=\"mmpay-toggle-btn btn-en\" onclick=\"MMPayToggleLang('en')\">EN</button>\n        <button class=\"mmpay-toggle-btn btn-mm\" onclick=\"MMPayToggleLang('mm')\">MM</button>\n    </div>\n    <div style=\"margin: 0 auto 24px auto; width: 72px; height: 72px; border-radius: 50%; background: ".concat(iconBgVar, "; display: flex; align-items: center; justify-content: center;\">\n        ").concat(iconSvg, "\n    </div>\n    <h2 style=\"font-size: 1.4rem; font-weight: 700; color: var(--mmp-text-main); margin: 0 0 10px 0;\">\n        <span class=\"en-text\">").concat(statusTextEn, "</span>\n        <span class=\"mm-text\">").concat(statusTextMm, "</span>\n    </h2>\n    <div style=\"background: var(--mmp-detail-bg); padding: 8px 14px; border-radius: 10px; border: 1px solid var(--mmp-border); display: inline-block; margin-bottom: 24px;\">\n        <p style=\"color: var(--mmp-text-sub); font-size: 0.85rem; margin: 0; font-weight: 600;\">ID: ").concat(orderId, "</p>\n    </div>\n    <p style=\"color: var(--mmp-text-sub); margin-top: 0; margin-bottom: 32px; font-size: 0.95rem; line-height: 1.5;\">\n        ").concat(messageHtml, "\n    </p>\n    <button class=\"mmpay-button\" onclick=\"MMPayCloseModal(true)\">\n        <span class=\"en-text\">Close</span>\n        <span class=\"mm-text\">\u1015\u102D\u1010\u103A\u1019\u100A\u103A</span>\n    </button>\n</div>");
@@ -256,8 +265,7 @@
         };
         MMPayUI.prototype.showTerminalMessage = function (orderId, status, messageHtml, bindHandlers) {
             this.cleanupModal(true);
-            var isSuccess = status === 'SUCCESS';
-            var content = _getContentAfterModal(isSuccess, orderId, messageHtml, this.design);
+            var content = _getContentAfterModal(status, orderId, messageHtml, this.design);
             this.createAndRenderModal(content, bindHandlers);
         };
         MMPayUI.prototype.showCancelConfirmationModal = function () {
@@ -410,7 +418,7 @@
             this.api = new MMPayAPI(baseUrl, this.environment, publishableKey);
             this.ui = new MMPayUI({
                 mode: ((_a = options.design) === null || _a === void 0 ? void 0 : _a.mode) || 'light',
-                color: ((_b = options.design) === null || _b === void 0 ? void 0 : _b.color) || '#000000'
+                color: (_b = options.design) === null || _b === void 0 ? void 0 : _b.color
             });
             if (typeof window !== 'undefined') {
                 this._checkAndAutoResume();
@@ -617,7 +625,7 @@
         };
         MMPaySDK.prototype.pay = function (orderId, onComplete) {
             return __awaiter(this, void 0, void 0, function () {
-                var cachedData, parsed, showPayload, expireAt, startTime, apiResponse, elapsed_2, mappedPaymentResponse, mappedPaymentPayload, error_2, errMessage, terminalMsg;
+                var cachedData, parsed, showPayload, expireAt, startTime, apiResponse, elapsed_2, status_1, terminalStatus, terminalMsg, mappedPaymentResponse, mappedPaymentPayload, error_2, errMessage, terminalMsg;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
@@ -656,27 +664,58 @@
                             _a.sent();
                             _a.label = 4;
                         case 4:
-                            if (apiResponse && apiResponse.qr && apiResponse.transactionRefId) {
-                                mappedPaymentResponse = {
-                                    amount: apiResponse.amount,
-                                    orderId: apiResponse.orderId,
-                                    transactionRefId: apiResponse.transactionRefId,
-                                    qr: apiResponse.qr
-                                };
-                                mappedPaymentPayload = { amount: apiResponse.amount, orderId: apiResponse.orderId, nonce: showPayload.nonce };
-                                localStorage.setItem(this.CACHE_KEY, JSON.stringify({
-                                    payload: mappedPaymentPayload,
-                                    apiResponse: mappedPaymentResponse,
-                                    expireAt: expireAt,
-                                    token: this.api.getToken(),
-                                    environment: this.environment
-                                }));
-                                this._resumePaymentState(mappedPaymentResponse, mappedPaymentPayload, expireAt);
+                            if (apiResponse) {
+                                status_1 = (apiResponse.status || '').toUpperCase();
+                                if (status_1 !== 'PENDING') {
+                                    this._clearCache();
+                                    terminalStatus = 'FAILED';
+                                    terminalMsg = '';
+                                    if (status_1 === 'SUCCESS') {
+                                        terminalStatus = 'SUCCESS';
+                                        terminalMsg = "<span class=\"en-text\">Payment successful.<br>Ref: ".concat(apiResponse.transactionRefId || 'N/A', "</span><span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F \u1021\u1031\u102C\u1004\u103A\u1019\u103C\u1004\u103A\u1015\u102B\u1015\u103C\u102E\u104B<br>\u101B\u100A\u103A\u100A\u103D\u103E\u1014\u103A\u1038\u1014\u1036\u1015\u102B\u1010\u103A: ").concat(apiResponse.transactionRefId || 'N/A', "</span>");
+                                    }
+                                    else if (status_1 === 'CANCELLED') {
+                                        terminalStatus = 'CANCELLED';
+                                        terminalMsg = "<span class=\"en-text\">Payment cancelled.</span><span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F\u1000\u102D\u102F \u1015\u101A\u103A\u1016\u103B\u1000\u103A\u101C\u102D\u102F\u1000\u103A\u1015\u102B\u101E\u100A\u103A\u104B</span>";
+                                    }
+                                    else if (status_1 === 'EXPIRED') {
+                                        terminalStatus = 'EXPIRED';
+                                        terminalMsg = "<span class=\"en-text\">Payment expired.</span><span class=\"mm-text\">\u101E\u1000\u103A\u1010\u1019\u103A\u1038\u1000\u102F\u1014\u103A\u101E\u103D\u102C\u1038\u1015\u102B\u1015\u103C\u102E\u104B</span>";
+                                    }
+                                    else {
+                                        terminalMsg = "<span class=\"en-text\">Payment failed.</span><span class=\"mm-text\">\u1019\u1021\u1031\u102C\u1004\u103A\u1019\u103C\u1004\u103A\u1015\u102B\u104B</span>";
+                                    }
+                                    this.ui.showTerminalMessage(apiResponse.orderId || orderId, terminalStatus, terminalMsg, this._getGlobalHandlers(true));
+                                    this._triggerEvent({
+                                        success: status_1 === 'SUCCESS',
+                                        failed: status_1 === 'FAILED',
+                                        expired: status_1 === 'EXPIRED',
+                                        cancelled: status_1 === 'CANCELLED',
+                                        orderId: apiResponse.orderId || orderId,
+                                        transactionRefId: apiResponse.transactionRefId
+                                    });
+                                    return [2 /*return*/];
+                                }
+                                if (apiResponse.qr && apiResponse.transactionRefId) {
+                                    mappedPaymentResponse = {
+                                        amount: apiResponse.amount,
+                                        orderId: apiResponse.orderId,
+                                        transactionRefId: apiResponse.transactionRefId,
+                                        qr: apiResponse.qr
+                                    };
+                                    mappedPaymentPayload = { amount: apiResponse.amount, orderId: apiResponse.orderId, nonce: showPayload.nonce };
+                                    localStorage.setItem(this.CACHE_KEY, JSON.stringify({
+                                        payload: mappedPaymentPayload,
+                                        apiResponse: mappedPaymentResponse,
+                                        expireAt: expireAt,
+                                        token: this.api.getToken(),
+                                        environment: this.environment
+                                    }));
+                                    this._resumePaymentState(mappedPaymentResponse, mappedPaymentPayload, expireAt);
+                                    return [2 /*return*/];
+                                }
                             }
-                            else {
-                                throw new Error("Invalid API Response: Missing QR Data or Reference ID.");
-                            }
-                            return [3 /*break*/, 6];
+                            throw new Error("Invalid API Response: Missing QR Data or Reference ID.");
                         case 5:
                             error_2 = _a.sent();
                             this.api.setToken(null);
@@ -699,7 +738,7 @@
                         window.clearInterval(this.pollIntervalId);
                     }
                     checkStatus = function () { return __awaiter(_this, void 0, void 0, function () {
-                        var response, status_1, success, messageHtml;
+                        var response, status_2, messageHtml;
                         return __generator(this, function (_a) {
                             switch (_a.label) {
                                 case 0:
@@ -707,20 +746,27 @@
                                     return [4 /*yield*/, this.api.pollPayment(payload)];
                                 case 1:
                                     response = _a.sent();
-                                    status_1 = (response.status || '').toUpperCase();
-                                    if (status_1 === 'SUCCESS' || status_1 === 'FAILED' || status_1 === 'EXPIRED') {
+                                    status_2 = (response.status || '').toUpperCase();
+                                    if (status_2 === 'SUCCESS' || status_2 === 'FAILED' || status_2 === 'EXPIRED' || status_2 === 'CANCELLED') {
                                         this._cleanup();
                                         this._clearCache();
-                                        success = status_1 === 'SUCCESS';
-                                        messageHtml = success ?
-                                            "<span class=\"en-text\">Payment successful.<br>Ref: ".concat(response.transactionRefId || 'N/A', "</span>\n             <span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F \u1021\u1031\u102C\u1004\u103A\u1019\u103C\u1004\u103A\u1015\u102B\u1015\u103C\u102E\u104B<br>\u101B\u100A\u103A\u100A\u103D\u103E\u1014\u103A\u1038\u1014\u1036\u1015\u102B\u1010\u103A: ").concat(response.transactionRefId || 'N/A', "</span>") :
-                                            "<span class=\"en-text\">Payment ".concat(status_1 === 'FAILED' ? 'failed' : 'expired', ".</span>\n             <span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F ").concat(status_1 === 'FAILED' ? 'မအောင်မြင်ပါ' : 'သက်တမ်းကုန်သွားပါပြီ', "\u104B</span>");
-                                        this.ui.showTerminalMessage(response.orderId || 'N/A', status_1, messageHtml, this._getGlobalHandlers(true));
+                                        messageHtml = '';
+                                        if (status_2 === 'SUCCESS') {
+                                            messageHtml = "<span class=\"en-text\">Payment successful.<br>Ref: ".concat(response.transactionRefId || 'N/A', "</span>\n             <span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F \u1021\u1031\u102C\u1004\u103A\u1019\u103C\u1004\u103A\u1015\u102B\u1015\u103C\u102E\u104B<br>\u101B\u100A\u103A\u100A\u103D\u103E\u1014\u103A\u1038\u1014\u1036\u1015\u102B\u1010\u103A: ").concat(response.transactionRefId || 'N/A', "</span>");
+                                        }
+                                        else if (status_2 === 'CANCELLED') {
+                                            messageHtml = "<span class=\"en-text\">Payment cancelled.</span>\n             <span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F\u1000\u102D\u102F \u1015\u101A\u103A\u1016\u103B\u1000\u103A\u101C\u102D\u102F\u1000\u103A\u1015\u102B\u101E\u100A\u103A\u104B</span>";
+                                        }
+                                        else {
+                                            messageHtml = "<span class=\"en-text\">Payment ".concat(status_2 === 'FAILED' ? 'failed' : 'expired', ".</span>\n             <span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F ").concat(status_2 === 'FAILED' ? 'မအောင်မြင်ပါ' : 'သက်တမ်းကုန်သွားပါပြီ', "\u104B</span>");
+                                        }
+                                        this.ui.showTerminalMessage(response.orderId || 'N/A', status_2, messageHtml, this._getGlobalHandlers(true));
                                         this.api.setToken(null);
                                         this._triggerEvent({
-                                            success: status_1 === 'SUCCESS',
-                                            failed: status_1 === 'FAILED',
-                                            expired: status_1 === 'EXPIRED',
+                                            success: status_2 === 'SUCCESS',
+                                            failed: status_2 === 'FAILED',
+                                            expired: status_2 === 'EXPIRED',
+                                            cancelled: status_2 === 'CANCELLED',
                                             orderId: response.orderId,
                                             transactionId: response.transactionRefId,
                                             transactionRefId: response.transactionRefId

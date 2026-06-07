@@ -111,8 +111,13 @@ export function _getContentCoreCss(design?: IDesignOptions): string {
 `;
 }
 
+
 export function _getContentQRDisplay(qrContainerId: string, merchantName: string, formattedAmount: string, apiResponse: any, design?: IDesignOptions): string {
-  const downloadBtnColor = design?.color || '#000000';
+  let customBtnStyle = '';
+  if (design?.color) {
+    customBtnStyle = `style="background-color: ${design.color} !important; color: #ffffff !important;"`;
+  }
+
   return `
       <style>
         .mmpay-qr-view { padding: 64px 20px 24px 20px; box-sizing: border-box; width: 100%; display: flex; flex-direction: column; justify-content: center; }
@@ -173,7 +178,7 @@ export function _getContentQRDisplay(qrContainerId: string, merchantName: string
                   <strong>${apiResponse.transactionRefId}</strong>
               </div>
           </div>
-          <button class="mmpay-button" style="background-color: ${downloadBtnColor} !important; color: #ffffff !important;" onclick="MMPayDownloadQR()">
+          <button class="mmpay-button" ${customBtnStyle} onclick="MMPayDownloadQR()">
               <span class="en-text">Download QR Code</span>
               <span class="mm-text">QR ကုဒ်ကို သိမ်းဆည်းမည်</span>
           </button>
@@ -181,10 +186,13 @@ export function _getContentQRDisplay(qrContainerId: string, merchantName: string
     `;
 }
 
-export function _getContentAfterModal(isSuccess: boolean, orderId: string, messageHtml: string, design?: IDesignOptions): string {
-  const iconColor = isSuccess ? '#34c759' : '#ff3b30';
-  const iconBgVar = isSuccess ? 'var(--mmp-success-bg)' : 'var(--mmp-fail-bg)';
-  const isExpired = messageHtml.toLowerCase().includes('expire') || messageHtml.includes('သတ်မှတ်ချိန်ကုန်');
+
+export function _getContentAfterModal(status: 'SUCCESS' | 'FAILED' | 'EXPIRED' | 'CANCELLED', orderId: string, messageHtml: string, design?: IDesignOptions): string {
+  const isSuccess = status === 'SUCCESS';
+  const isCancelled = status === 'CANCELLED';
+
+  const iconColor = isSuccess ? '#34c759' : (isCancelled ? '#ff9500' : '#ff3b30');
+  const iconBgVar = isSuccess ? 'var(--mmp-success-bg)' : (isCancelled ? 'var(--mmp-warn-bg)' : 'var(--mmp-fail-bg)');
 
   let iconSvg: string;
   let statusTextEn: string;
@@ -194,9 +202,13 @@ export function _getContentAfterModal(isSuccess: boolean, orderId: string, messa
     statusTextEn = 'Success';
     statusTextMm = 'အောင်မြင်ပါသည်';
     iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="${iconColor}" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>`;
+  } else if (isCancelled) {
+    statusTextEn = 'Cancelled';
+    statusTextMm = 'ပယ်ဖျက်လိုက်ပါသည်';
+    iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="${iconColor}" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>`;
   } else {
-    statusTextEn = isExpired ? 'Expired' : 'Failed';
-    statusTextMm = isExpired ? 'အချိန်ကျော်လွန်သွားပါပြီ' : 'မအောင်မြင်ပါ';
+    statusTextEn = status === 'EXPIRED' ? 'Expired' : 'Failed';
+    statusTextMm = status === 'EXPIRED' ? 'အချိန်ကျော်လွန်သွားပါပြီ' : 'မအောင်မြင်ပါ';
     iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="${iconColor}" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>`;
   }
 

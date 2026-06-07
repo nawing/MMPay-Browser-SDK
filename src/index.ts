@@ -47,7 +47,7 @@ export class MMPaySDK {
     this.api = new MMPayAPI(baseUrl, this.environment, publishableKey);
     this.ui = new MMPayUI({
       mode: options.design?.mode || 'light',
-      color: options.design?.color || '#000000'
+      color: options.design?.color
     });
 
     if (typeof window !== 'undefined') {
@@ -238,26 +238,62 @@ export class MMPaySDK {
       const elapsed = Date.now() - startTime;
       if (elapsed < 1500) await new Promise(resolve => setTimeout(resolve, 1500 - elapsed));
 
-      if (apiResponse && apiResponse.qr && apiResponse.transactionRefId) {
-        const mappedPaymentResponse: ICreatePaymentResponse = {
-          amount: apiResponse.amount,
-          orderId: apiResponse.orderId,
-          transactionRefId: apiResponse.transactionRefId,
-          qr: apiResponse.qr
-        };
-        const mappedPaymentPayload = {amount: apiResponse.amount, orderId: apiResponse.orderId, nonce: showPayload.nonce};
+      if (apiResponse) {
+        const status = (apiResponse.status || '').toUpperCase();
 
-        localStorage.setItem(this.CACHE_KEY, JSON.stringify({
-          payload: mappedPaymentPayload,
-          apiResponse: mappedPaymentResponse,
-          expireAt: expireAt,
-          token: this.api.getToken(),
-          environment: this.environment
-        }));
-        this._resumePaymentState(mappedPaymentResponse, mappedPaymentPayload, expireAt);
-      } else {
-        throw new Error("Invalid API Response: Missing QR Data or Reference ID.");
+        if (status !== 'PENDING') {
+          this._clearCache();
+          let terminalStatus: 'SUCCESS' | 'FAILED' | 'EXPIRED' | 'CANCELLED' = 'FAILED';
+          let terminalMsg = '';
+
+          if (status === 'SUCCESS') {
+            terminalStatus = 'SUCCESS';
+            terminalMsg = `<span class="en-text">Payment successful.<br>Ref: ${apiResponse.transactionRefId || 'N/A'}</span><span class="mm-text">ငွေပေးချေမှု အောင်မြင်ပါပြီ။<br>ရည်ညွှန်းနံပါတ်: ${apiResponse.transactionRefId || 'N/A'}</span>`;
+          } else if (status === 'CANCELLED') {
+            terminalStatus = 'CANCELLED';
+            terminalMsg = `<span class="en-text">Payment cancelled.</span><span class="mm-text">ငွေပေးချေမှုကို ပယ်ဖျက်လိုက်ပါသည်။</span>`;
+          } else if (status === 'EXPIRED') {
+            terminalStatus = 'EXPIRED';
+            terminalMsg = `<span class="en-text">Payment expired.</span><span class="mm-text">သက်တမ်းကုန်သွားပါပြီ။</span>`;
+          } else {
+            terminalMsg = `<span class="en-text">Payment failed.</span><span class="mm-text">မအောင်မြင်ပါ။</span>`;
+          }
+
+          this.ui.showTerminalMessage(apiResponse.orderId || orderId, terminalStatus, terminalMsg, this._getGlobalHandlers(true));
+
+          this._triggerEvent({
+            success: status === 'SUCCESS',
+            failed: status === 'FAILED',
+            expired: status === 'EXPIRED',
+            cancelled: status === 'CANCELLED',
+            orderId: apiResponse.orderId || orderId,
+            transactionRefId: apiResponse.transactionRefId
+          });
+          return;
+        }
+
+        if (apiResponse.qr && apiResponse.transactionRefId) {
+          const mappedPaymentResponse: ICreatePaymentResponse = {
+            amount: apiResponse.amount,
+            orderId: apiResponse.orderId,
+            transactionRefId: apiResponse.transactionRefId,
+            qr: apiResponse.qr
+          };
+          const mappedPaymentPayload = {amount: apiResponse.amount, orderId: apiResponse.orderId, nonce: showPayload.nonce};
+
+          localStorage.setItem(this.CACHE_KEY, JSON.stringify({
+            payload: mappedPaymentPayload,
+            apiResponse: mappedPaymentResponse,
+            expireAt: expireAt,
+            token: this.api.getToken(),
+            environment: this.environment
+          }));
+          this._resumePaymentState(mappedPaymentResponse, mappedPaymentPayload, expireAt);
+          return;
+        }
       }
+
+      throw new Error("Invalid API Response: Missing QR Data or Reference ID.");
     } catch (error: any) {
       this.api.setToken(null);
       const errMessage = error?.message || 'Error occurred while loading payment.';
@@ -276,24 +312,30 @@ export class MMPaySDK {
         const response = await this.api.pollPayment(payload);
         const status = (response.status || '').toUpperCase();
 
-        if (status === 'SUCCESS' || status === 'FAILED' || status === 'EXPIRED') {
+        if (status === 'SUCCESS' || status === 'FAILED' || status === 'EXPIRED' || status === 'CANCELLED') {
           this._cleanup();
           this._clearCache();
 
-          const success = status === 'SUCCESS';
-          const messageHtml = success ?
-            `<span class="en-text">Payment successful.<br>Ref: ${response.transactionRefId || 'N/A'}</span>
-             <span class="mm-text">ငွေပေးချေမှု အောင်မြင်ပါပြီ။<br>ရည်ညွှန်းနံပါတ်: ${response.transactionRefId || 'N/A'}</span>` :
-            `<span class="en-text">Payment ${status === 'FAILED' ? 'failed' : 'expired'}.</span>
+          let messageHtml = '';
+          if (status === 'SUCCESS') {
+            messageHtml = `<span class="en-text">Payment successful.<br>Ref: ${response.transactionRefId || 'N/A'}</span>
+             <span class="mm-text">ငွေပေးချေမှု အောင်မြင်ပါပြီ။<br>ရည်ညွှန်းနံပါတ်: ${response.transactionRefId || 'N/A'}</span>`;
+          } else if (status === 'CANCELLED') {
+            messageHtml = `<span class="en-text">Payment cancelled.</span>
+             <span class="mm-text">ငွေပေးချေမှုကို ပယ်ဖျက်လိုက်ပါသည်။</span>`;
+          } else {
+            messageHtml = `<span class="en-text">Payment ${status === 'FAILED' ? 'failed' : 'expired'}.</span>
              <span class="mm-text">ငွေပေးချေမှု ${status === 'FAILED' ? 'မအောင်မြင်ပါ' : 'သက်တမ်းကုန်သွားပါပြီ'}။</span>`;
+          }
 
-          this.ui.showTerminalMessage(response.orderId || 'N/A', status as 'SUCCESS' | 'FAILED' | 'EXPIRED', messageHtml, this._getGlobalHandlers(true));
+          this.ui.showTerminalMessage(response.orderId || 'N/A', status as 'SUCCESS' | 'FAILED' | 'EXPIRED' | 'CANCELLED', messageHtml, this._getGlobalHandlers(true));
           this.api.setToken(null);
 
           this._triggerEvent({
             success: status === 'SUCCESS',
             failed: status === 'FAILED',
             expired: status === 'EXPIRED',
+            cancelled: status === 'CANCELLED',
             orderId: response.orderId,
             transactionId: response.transactionRefId,
             transactionRefId: response.transactionRefId
