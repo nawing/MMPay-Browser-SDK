@@ -457,35 +457,42 @@ export class MMPaySDK {
     delete window.MMPayReRenderModal;
   }
 
+
   private _injectQrScript(qrData: string, qrContainerId: string): void {
     const initQR = () => {
       const container = document.getElementById(qrContainerId);
-      if (typeof QRCode !== 'undefined' && container) {
+      // Check if the modern QRCode library with toCanvas is loaded
+      if (typeof (window as any).QRCode !== 'undefined' && typeof (window as any).QRCode.toCanvas === 'function' && container) {
         container.innerHTML = '';
+        const canvas = document.createElement('canvas');
+        container.appendChild(canvas);
 
-        const safeUtf8Data = unescape(encodeURIComponent(qrData));
-
-        new QRCode(container, {
-          text: safeUtf8Data,
+        // Natively handles Myanmar Unicode without corrupting EMVCo checksums
+        (window as any).QRCode.toCanvas(canvas, qrData, {
           width: this.QR_SIZE,
-          height: this.QR_SIZE,
-          colorDark: "#000000",
-          colorLight: "#ffffff",
-          correctLevel: QRCode.CorrectLevel.L
+          margin: 1,
+          color: {
+            dark: "#000000",
+            light: "#ffffff"
+          },
+          errorCorrectionLevel: 'M'
+        }, function (error: any) {
+          if (error) console.error("[MMPay SDK] QR Generation Error:", error);
         });
-      } else {
       }
     };
 
-    if (typeof QRCode !== 'undefined') {
+    if (typeof (window as any).QRCode !== 'undefined' && typeof (window as any).QRCode.toCanvas === 'function') {
       setTimeout(initQR, 50);
     } else {
+      // Load the modern 'qrcode' package from jsDelivr instead of the broken legacy library
       const script = document.createElement('script');
-      script.src = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
+      script.src = "https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js";
       script.onload = () => setTimeout(initQR, 50);
       document.head.appendChild(script);
     }
   }
+
 
   private async _startPolling(payload: IPollingRequest): Promise<void> {
     if (this.pollIntervalId !== undefined) {
