@@ -8,20 +8,20 @@ Developed using **TypeScript**, the SDK offers a clean, type-safe interface and 
 
 ### 1. Code Implementation
 
-## 🛠️ Installation
+
+### Step 1: 🛠️  Plugin or SDK Installation
 The MyanMyanPay SDK is distributed as a single JavaScript file, ready for direct inclusion.
 
-### Step 1: Include the SDK
 Embed the following `<script>` tag into the `<head>` or before the closing `</body>` tag of your checkout page.
+
 ```html
 <script src="https://cdn.jsdelivr.net/npm/mmpay-browser-sdk@latest/dist/mmpay-sdk.js"></script>
 ```
----
-## 🚀 Usage
+
+
+### Step 2: 🚀 Initialize Your App
 The `MMPaySDK` class provides two distinct methods to suit different integration needs.
 
-
-### Step 2: Initialize Your App
 #### **Example Implementation**
 ```javascript
 const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
@@ -34,7 +34,8 @@ const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
 });
 ```
 
-### Step 3: Call Modal Object
+
+### Step 3: 🚀 Call Modal Object
 ### `showPaymentModal()` (Recommended: UI + Polling)
 This is the easiest way to integrate. This method **initiates the transaction**, **renders the UI** (QR code/Redirect link) into your container, and automatically **polls your gateway** for payment completion status, executing a callback when the payment is final.
 
@@ -66,7 +67,7 @@ MMPayApp.showPaymentModal({
 });
 ```
 
-#### **All Together Implementation**
+### Step 4: 🚀 Putting All Together
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/mmpay-browser-sdk@latest/dist/mmpay-sdk.js"></script>
@@ -102,6 +103,8 @@ MMPayApp.showPaymentModal({
 });
 ```
 
+---
+
 
 ### 2. Error Codes
 
@@ -114,6 +117,8 @@ MMPayApp.showPaymentModal({
 | **`R004`** | Origin Requires SSL |
 | **`429`** | Ratelimit hit only 1000 request / minute allowed |
 
+
+---
 
 ### 3. Angular Framework Implementation
 
@@ -191,6 +196,7 @@ export class MMPayService {
 
 ```
 
+---
 
 ### 4. React Framework Implementation
 
@@ -263,6 +269,7 @@ export const Checkout = () => {
 };
 ```
 
+---
 
 ### 5. Vue Framework Implementation
 
