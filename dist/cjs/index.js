@@ -609,28 +609,62 @@ var MMPaySDK = /** @class */ (function () {
         var _this = this;
         var initQR = function () {
             var container = document.getElementById(qrContainerId);
-            if (typeof QRCode !== 'undefined' && container) {
+            if (!container)
+                return;
+            if (typeof window.QRCode !== 'undefined' && typeof window.QRCode.toCanvas === 'function') {
                 container.innerHTML = '';
-                var safeUtf8Data = unescape(encodeURIComponent(qrData));
-                new QRCode(container, {
-                    text: safeUtf8Data,
+                var canvas = document.createElement('canvas');
+                container.appendChild(canvas);
+                window.QRCode.toCanvas(canvas, qrData, {
                     width: _this.QR_SIZE,
-                    height: _this.QR_SIZE,
-                    colorDark: "#000000",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.L
+                    margin: 1,
+                    color: { dark: "#000000", light: "#ffffff" },
+                    errorCorrectionLevel: 'M'
+                }, function (error) {
+                    if (error)
+                        console.error("[MMPay SDK] QR Generation Error:", error);
                 });
             }
+            else {
+                console.error("[MMPay SDK] Modern QRCode library failed to bind to window.");
+            }
         };
-        if (typeof QRCode !== 'undefined') {
+        // 1. If it's already successfully loaded in memory, use it immediately
+        if (typeof window.QRCode !== 'undefined' && typeof window.QRCode.toCanvas === 'function') {
             setTimeout(initQR, 50);
+            return;
         }
-        else {
+        // 2. Force clear legacy libraries just in case
+        if (typeof window.QRCode !== 'undefined') {
+            try {
+                delete window.QRCode;
+            }
+            catch (e) { }
+        }
+        // 3. Multi-CDN Fallback Array (Defends against ISP blocks)
+        var cdnUrls = [
+            "https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js", // Primary: jsDelivr
+            "https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js", // Fallback 1: Unpkg
+            "https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js" // Fallback 2: Cloudflare
+        ];
+        var currentCdnIndex = 0;
+        var loadNextCdn = function () {
+            if (currentCdnIndex >= cdnUrls.length) {
+                console.error("[MMPay SDK] CRITICAL: All CDNs blocked or failed to load the QR library.");
+                return;
+            }
             var script = document.createElement('script');
-            script.src = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
+            script.src = cdnUrls[currentCdnIndex];
             script.onload = function () { return setTimeout(initQR, 50); };
+            script.onerror = function () {
+                console.warn("[MMPay SDK] Failed to fetch from CDN: ".concat(cdnUrls[currentCdnIndex], ". Trying next fallback..."));
+                currentCdnIndex++;
+                loadNextCdn(); // Recursively try the next URL in the array
+            };
             document.head.appendChild(script);
-        }
+        };
+        // Start the loading process
+        loadNextCdn();
     };
     MMPaySDK.prototype._startPolling = function (payload) {
         return __awaiter(this, void 0, void 0, function () {
