@@ -5,6 +5,9 @@ Developed using **TypeScript**, the SDK offers a clean, type-safe interface and 
 
 ---
 
+
+### 1. Code Implementation
+
 ## 🛠️ Installation
 The MyanMyanPay SDK is distributed as a single JavaScript file, ready for direct inclusion.
 
@@ -17,6 +20,8 @@ Embed the following `<script>` tag into the `<head>` or before the closing `</bo
 ## 🚀 Usage
 The `MMPaySDK` class provides two distinct methods to suit different integration needs.
 
+
+### Step 2: Initialize Your App
 #### **Example Implementation**
 ```javascript
 const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
@@ -29,7 +34,8 @@ const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
 });
 ```
 
-### 1. `showPaymentModal()` (Recommended: UI + Polling)
+### Step 3: Call Modal Object
+### `showPaymentModal()` (Recommended: UI + Polling)
 This is the easiest way to integrate. This method **initiates the transaction**, **renders the UI** (QR code/Redirect link) into your container, and automatically **polls your gateway** for payment completion status, executing a callback when the payment is final.
 
 #### **Method Signature**
@@ -60,8 +66,7 @@ MMPayApp.showPaymentModal({
 });
 ```
 
-
-#### ** All Together Implementation**
+#### **All Together Implementation**
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/mmpay-browser-sdk@latest/dist/mmpay-sdk.js"></script>
@@ -98,7 +103,7 @@ MMPayApp.showPaymentModal({
 ```
 
 
-### Error Codes
+### 2. Error Codes
 
 | Code | Description |
 | :--- | :--- |
@@ -113,10 +118,6 @@ MMPayApp.showPaymentModal({
 ### 3. Angular Framework Implementation
 
 #### **Example Implementation**
-
-```html
-<script src="https://cdn.jsdelivr.net/npm/mmpay-browser-sdk@latest/dist/mmpay-sdk.js"></script>
-```
 
 ```typescript
 import {Injectable} from '@angular/core';
@@ -165,7 +166,7 @@ export class MMPayService {
      * @param {string} callbackUrl
      * @param {string} customMessage
      */
-    modalPay(amount: number, orderId: string, callbackUrl?: string, customMessage?: string) {
+    pay(amount: number, orderId: string, callbackUrl?: string, customMessage?: string) {
         this.mmpay.showPaymentModal({
             amount,
             orderId,
@@ -191,14 +192,9 @@ export class MMPayService {
 ```
 
 
-
 ### 4. React Framework Implementation
 
 #### **Example Implementation**
-
-```html
-<script src="https://cdn.jsdelivr.net/npm/mmpay-browser-sdk@latest/dist/mmpay-sdk.js"></script>
-```
 
 ```tsx
 import React, { useEffect, useRef } from 'react';
@@ -224,7 +220,7 @@ export const useMMPay = () => {
     });
   }, []);
 
-  const modalPay = (amount, orderId, callbackUrl, customMessage) => {
+  const pay = (amount: number, orderId: string, callbackUrl?: string, customMessage?: string) => {
     if (!mmpayRef.current) return;
 
     mmpayRef.current.showPaymentModal({
@@ -235,6 +231,7 @@ export const useMMPay = () => {
     }, (result) => {
         if (result.success) {
             console.log('Success: ' + result.orderId + ' : Transaction : ' + result.transactionId);
+            // Redirect Somewhere
         }
         if (result.created) {
             console.log('Created: ' + result.orderId);
@@ -248,14 +245,14 @@ export const useMMPay = () => {
     });
   };
 
-  return { modalPay, pay };
+  return { pay };
 };
 
 export const Checkout = () => {
-    const { modalPay } = useMMPay();
+    const { pay } = useMMPay();
 
     const handlePayment = () => {
-        modalPay(5000, `ORD-${Date.now()}`);
+        pay(5000, `ORD-${Date.now()}`);
     };
 
     return (
@@ -267,12 +264,9 @@ export const Checkout = () => {
 ```
 
 
-### 4. Vue Framework Implementation
+### 5. Vue Framework Implementation
 
 #### **Example Implementation**
-```html
-<script src="https://cdn.jsdelivr.net/npm/mmpay-browser-sdk@latest/dist/mmpay-sdk.js"></script>
-```
 
 ```vue
 
@@ -299,7 +293,7 @@ onMounted(() => {
     });
 });
 
-const modalPay = (amount, orderId, callbackUrl, customMessage) => {
+const pay = (amount: number, orderId: string, callbackUrl?: string, customMessage?: string) => {
     if (!mmpay.value) return;
 
     mmpay.value.showPaymentModal({
@@ -310,6 +304,7 @@ const modalPay = (amount, orderId, callbackUrl, customMessage) => {
     }, (result) => {
         if (result.success) {
             console.log('Success: ' + result.orderId + ' : Transaction : ' + result.transactionId);
+            // Redirect Somewhere
         }
         if (result.created) {
             console.log('Created: ' + result.orderId);
@@ -324,7 +319,7 @@ const modalPay = (amount, orderId, callbackUrl, customMessage) => {
 };
 
 const handlePayment = () => {
-    modalPay(5000, `ORD-${Date.now()}`);
+    pay(5000, `ORD-${Date.now()}`);
 };
 </script>
 
