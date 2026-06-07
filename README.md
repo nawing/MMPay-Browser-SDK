@@ -192,3 +192,147 @@ export class MMPayService {
 }
 
 ```
+
+
+
+### 4. React Framework Implementation
+
+#### **Example Implementation**
+```tsx
+import React, { useEffect, useRef } from 'react';
+
+export const useMMPay = () => {
+  const mmpayRef = useRef(null);
+
+  useEffect(() => {
+    const MMPaySDK = window.MMPaySDK;
+
+    if (!MMPaySDK) {
+      console.error('SDK not loaded attached to window');
+      return;
+    }
+
+    mmpayRef.current = new MMPaySDK('pk_test_123', {
+      baseUrl: 'https://xxx.myanmyanpay.com',
+      environment: 'sandbox',
+      merchantName: 'Test Shop'
+    });
+  }, []);
+
+  const modalPay = (amount, orderId, callbackUrl, customMessage) => {
+    if (!mmpayRef.current) return;
+
+    mmpayRef.current.showPaymentModal({
+      amount,
+      orderId,
+      callbackUrl,
+      customMessage,
+    }, (result) => {
+      if (result.success) {
+        console.log('Redirect Some where');
+      }
+    });
+  };
+
+  const pay = (amount, orderId, callbackUrl, customMessage) => {
+    if (!mmpayRef.current) return;
+
+    mmpayRef.current.createPayment({
+      amount,
+      orderId,
+      callbackUrl,
+      customMessage,
+    })
+    .then((result) => {
+      if (result.qr) {
+        console.log('Transaction ID: ' + result.qr);
+      }
+    });
+  };
+
+  return { modalPay, pay };
+};
+
+export const Checkout = () => {
+  const { modalPay } = useMMPay();
+
+  const handlePayment = () => {
+    modalPay(5000, `ORD-${Date.now()}`);
+  };
+
+  return (
+    <button onClick={handlePayment}>
+      Pay with MyanMyanPay
+    </button>
+  );
+};
+```
+
+
+### 4. Vue Framework Implementation
+
+#### **Example Implementation**
+```vue
+
+<script setup>
+import { onMounted, ref } from 'vue';
+
+const mmpay = ref(null);
+
+onMounted(() => {
+  const MMPaySDK = window.MMPaySDK;
+
+  if (!MMPaySDK) {
+    console.error('SDK not loaded attached to window');
+    return;
+  }
+
+  mmpay.value = new MMPaySDK('pk_test_123', {
+    baseUrl: 'https://xxx.myanmyanpay.com',
+    environment: 'sandbox',
+    merchantName: 'Test Shop'
+  });
+});
+
+const modalPay = (amount, orderId, callbackUrl, customMessage) => {
+  if (!mmpay.value) return;
+
+  mmpay.value.showPaymentModal({
+    amount,
+    orderId,
+    callbackUrl,
+    customMessage,
+  }, (result) => {
+    if (result.success) {
+      console.log('Redirect Some where');
+    }
+  });
+};
+
+const pay = (amount, orderId, callbackUrl, customMessage) => {
+  if (!mmpay.value) return;
+
+  mmpay.value.createPayment({
+    amount,
+    orderId,
+    callbackUrl,
+    customMessage,
+  }).then((result) => {
+    if (result.qr) {
+      console.log('Transaction ID: ' + result.qr);
+    }
+  });
+};
+
+const handlePayment = () => {
+  modalPay(5000, `ORD-${Date.now()}`);
+};
+</script>
+
+<template>
+  <button @click="handlePayment">
+    Pay with MyanMyanPay
+  </button>
+</template>
+
+```
