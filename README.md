@@ -1,6 +1,6 @@
-# MyanMyanPay No-code SDK
+# MyanMyanPay Browser Plugin Or No-code SDK
 ## 💳 Introduction
-Welcome to the **MyanMyanPay No Code SDK**! This library provides a secure and seamless way to integrate QR Code and Bank Redirect payments into any e-commerce checkout flow.
+Welcome to the **MyanMyanPay Browser Plugin No Code SDK**! This library provides a secure and seamless way to integrate QR Code and Bank Redirect payments into any e-commerce checkout flow.
 Developed using **TypeScript**, the SDK offers a clean, type-safe interface and handles complex tasks like API communication, UI rendering, and asynchronous payment status polling automatically.
 
 ---
@@ -9,7 +9,7 @@ Developed using **TypeScript**, the SDK offers a clean, type-safe interface and 
 ### 1. Code Implementation
 
 
-###### Step 1: 🛠️  Plugin or SDK Installation
+##### Step 1: 🛠️  Plugin or SDK Installation
 The MyanMyanPay SDK is distributed as a single JavaScript file, ready for direct inclusion.
 
 Embed the following `<script>` tag into the `<head>` or before the closing `</body>` tag of your checkout page.
@@ -19,7 +19,7 @@ Embed the following `<script>` tag into the `<head>` or before the closing `</bo
 ```
 
 
-###### Step 2: 🚀 Initialize Your App
+##### Step 2: 🚀 Initialize Your App
 The `MMPaySDK` class provides two distinct methods to suit different integration needs.
 
 #### **Example Implementation**
@@ -35,7 +35,7 @@ const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
 ```
 
 
-###### Step 3: 🚀 Call Modal Object
+##### Step 3: 🚀 Call Modal Object
 ### `showPaymentModal()` (Recommended: UI + Polling)
 This is the easiest way to integrate. This method **initiates the transaction**, **renders the UI** (QR code/Redirect link) into your container, and automatically **polls your gateway** for payment completion status, executing a callback when the payment is final.
 
@@ -67,7 +67,7 @@ MMPayApp.showPaymentModal({
 });
 ```
 
-###### Step 4: 🚀 Putting All Together
+##### Step 4: 🚀 Putting All Together
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/mmpay-browser-sdk@latest/dist/mmpay-sdk.js"></script>
