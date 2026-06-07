@@ -36,6 +36,21 @@ export interface ICreatePaymentResponse {
   qr: string;
 }
 
+export interface IPaymentShowRequestParams {
+  orderId: string;
+  nonce: string;
+}
+
+export interface IPaymentShowResponse {
+  orderId: string;
+  amount: number;
+  status: string;
+  currency: string;
+  transactionRefId: string;
+  qr: string;
+  createdAt: string;
+}
+
 export interface ICancelPaymentRequestParams {
   orderId: string;
   nonce: string;

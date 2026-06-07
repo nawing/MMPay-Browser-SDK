@@ -36,12 +36,43 @@ const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
 
 
 ##### Step 3: 🚀 Call Modal Object
-### `showPaymentModal()` (Recommended: UI + Polling)
+### `pay()` (Recommended: UI + Polling)
 This is the easiest way to integrate. This method **initiates the transaction**, **renders the UI** (QR code/Redirect link) into your container, and automatically **polls your gateway** for payment completion status, executing a callback when the payment is final.
 
 #### **Method Signature**
 ```typescript
-showPaymentModal(paymentData: PaymentData): Promise<CreatePaymentResponse>
+pay(orderId: string, onComplete: Function ): Promise<void>
+```
+
+#### **Example Implementation**
+```javascript
+MMPayApp.pay('Order-ID-111111', (result) => { // This Order Must Be Created WIth Our Sdks or Backend Api
+    if (result.success) {
+        console.log('Success: ' + result.orderId + ' : Transaction : ' + result.transactionId);
+    }
+    if (result.created) {
+        console.log('Created: ' + result.orderId);
+    }
+    if (result.cancelled) {
+        console.log('Cancelled: ' + result.orderId);
+    }
+    if (result.expired) {
+        console.log('Expoired: ' + result.orderId);
+    }
+});
+```
+
+
+##### Step 4: 🚀 Call Modal Object
+### `showPaymentModal()` (Not Recommended: UI + Polling)
+
+**Do this only for user input amount, like donation acception. Your order id and amount may not match and is prone to payload maipulation attacks**
+
+This is the easiest way to integrate. This method **initiates the transaction**, **renders the UI** (QR code/Redirect link) into your container, and automatically **polls your gateway** for payment completion status, executing a callback when the payment is final.
+
+#### **Method Signature**
+```typescript
+showPaymentModal(paymentData: PaymentData, onComplete: Function): Promise<void>
 ```
 
 #### **Example Implementation**
@@ -83,6 +114,24 @@ const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
     }
 });
 
+MMPayApp.pay('Order-ID-111111', (result) => { // This Order Must Be Created WIth Our Sdks or Backend Api
+    if (result.success) {
+        console.log('Success: ' + result.orderId + ' : Transaction : ' + result.transactionId);
+    }
+    if (result.created) {
+        console.log('Created: ' + result.orderId);
+    }
+    if (result.cancelled) {
+        console.log('Cancelled: ' + result.orderId);
+    }
+    if (result.expired) {
+        console.log('Expoired: ' + result.orderId);
+    }
+});
+
+
+
+// Use this only for donation and other usecases where order id and amount is not strict and user input
 MMPayApp.showPaymentModal({
     amount: 50000,
     orderId: 'ORD-' + new Date().getTime(),
@@ -163,13 +212,8 @@ export class MMPayService {
      * @param {string} callbackUrl
      * @param {string} customMessage
      */
-    pay(amount: number, orderId: string, callbackUrl?: string, customMessage?: string) {
-        this.mmpay.showPaymentModal({
-            amount,
-            orderId,
-            callbackUrl,
-            customMessage,
-        }, (result: ModalResponse) => {
+    pay(orderId: string ) {
+        this.mmpay.pay(orderId, (result: ModalResponse) => {
             if (result.success) {
                 console.log('Success: ' + result.orderId + ' : Transaction : ' + result.transactionId);
             }
@@ -226,15 +270,10 @@ export const useMMPay = () => {
     });
   }, []);
 
-  const pay = (amount: number, orderId: string, callbackUrl?: string, customMessage?: string) => {
+  const pay = (orderId: string) => {
     if (!mmpayRef.current) return;
 
-    mmpayRef.current.showPaymentModal({
-        amount,
-        orderId,
-        callbackUrl,
-        customMessage,
-    }, (result: ModalResponse) => {
+    mmpayRef.current.pay(orderId, (result: ModalResponse) => {
         if (result.success) {
             console.log('Success: ' + result.orderId + ' : Transaction : ' + result.transactionId);
             // Redirect Somewhere
@@ -308,15 +347,10 @@ onMounted(() => {
     });
 });
 
-const pay = (amount: number, orderId: string, callbackUrl?: string, customMessage?: string) => {
+const pay = ( orderId: string ) => {
     if (!mmpay.value) return;
 
-    mmpay.value.showPaymentModal({
-        amount,
-        orderId,
-        callbackUrl,
-        customMessage,
-    }, (result: ModalResponse) => {
+    mmpay.value.pay(orderId, (result: ModalResponse) => {
         if (result.success) {
             console.log('Success: ' + result.orderId + ' : Transaction : ' + result.transactionId);
             // Redirect Somewhere

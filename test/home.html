@@ -128,7 +128,7 @@
             resultBox.innerHTML = 'Payment initiated. Opening secure modal...';
 
             try {
-                await sdk.showPaymentModal({
+                await sdk.pay({
                     amount: parseFloat(finalAmount.toFixed(2)),
                     orderId: 'FSTY' + Date.now(),
                 }, (result) => {

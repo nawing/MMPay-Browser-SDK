@@ -1,53 +1,36 @@
-import {_getContentAfterModal, _getContentCancelModal, _getContentCoreCss, _getContentQRDisplay, _getPreloadScreen} from './templates';
+import {MMPayAPI} from './api';
 import {
-  ICancelPaymentRequestParams,
-  ICancelPaymentResponse,
   ICreatePaymentRequestParams,
   ICreatePaymentResponse,
-  ICreateTokenRequestParams,
-  ICreateTokenResponse,
-  IDesignOptions,
   IModalEventResult,
+  IPaymentShowRequestParams,
   IPollingRequest,
-  IPollingResponse,
   SDKOptions
 } from './types';
-
-declare const QRCode: any;
-declare const window: Window & {
-  MMPayDownloadQR: () => void;
-  MMPayCloseModal: (forceClose?: boolean) => void;
-  MMPayReRenderModal: () => void;
-  MMPayToggleLang: (lang: string) => void;
-  setInterval: (handler: TimerHandler, timeout?: number) => number;
-  clearInterval: (id: number) => void;
-};
+import {MMPayUI} from './ui';
 
 export class MMPaySDK {
   private POLL_INTERVAL_MS: number;
-  private tokenKey: string | any;
-  private publishableKey: string;
-  private baseUrl: string;
-  private merchantName: string;
-  private environment: 'sandbox' | 'production';
-  private pollIntervalId: number | undefined = undefined;
-  private countdownIntervalId: number | undefined = undefined;
-  private onCompleteCallback: ((result: IModalEventResult) => void) | null = null;
-  private overlayElement: HTMLDivElement | null = null;
-  private design: IDesignOptions;
-
-  private pendingApiResponse: ICreatePaymentResponse | null = null;
-  private pendingPaymentPayload: ICreatePaymentRequestParams | null = null;
-
-  private readonly QR_SIZE: number = 290;
   private readonly TIMEOUT_SECONDS: number = 300;
   private readonly CACHE_KEY: string = 'mmpay_pending_tx';
+
+  private environment: 'sandbox' | 'production';
+  private merchantName: string;
+  private onCompleteCallback: ((result: IModalEventResult) => void) | null = null;
+
+  private pollIntervalId: number | undefined = undefined;
+  private countdownIntervalId: number | undefined = undefined;
+
+  private pendingApiResponse: any | null = null;
+  private pendingPaymentPayload: any | null = null;
+
+  private api: MMPayAPI;
+  private ui: MMPayUI;
 
   constructor(publishableKey: string, options: SDKOptions = {}) {
     if (!publishableKey) {
       throw new Error("A Publishable Key is required to initialize [MMPaySDK].");
     }
-    this.publishableKey = publishableKey;
 
     if (publishableKey.includes('pk_test')) {
       this.environment = 'sandbox';
@@ -57,387 +40,63 @@ export class MMPaySDK {
       this.environment = options.environment || 'production';
     }
 
-    this.baseUrl = options.baseUrl || 'https://api.mm-pay.com';
+    const baseUrl = options.baseUrl || 'https://api.mm-pay.com';
     this.merchantName = options.merchantName || 'Your Merchant';
     this.POLL_INTERVAL_MS = options.pollInterval || 5000;
 
-    this.design = {
+    this.api = new MMPayAPI(baseUrl, this.environment, publishableKey);
+    this.ui = new MMPayUI({
       mode: options.design?.mode || 'light',
       color: options.design?.color || '#000000'
-    };
+    });
 
     if (typeof window !== 'undefined') {
       this._checkAndAutoResume();
     }
   }
 
+  private _getGlobalHandlers(isTerminal: boolean = false) {
+    return {
+      MMPayToggleLang: (lang: string) => {
+        const modal = document.getElementById('mmpay-full-modal');
+        if (modal) modal.className = 'mmpay-lang-' + lang;
+      },
+      MMPayReRenderModal: () => this.ui.reRenderPendingModalInstance(),
+      MMPayCloseModal: async (forceClose = false) => {
+        if (isTerminal || forceClose) {
+          if (forceClose && !isTerminal && this.pendingPaymentPayload) {
+            try {
+              await this.api.cancelPayment({
+                orderId: this.pendingPaymentPayload.orderId,
+                nonce: new Date().getTime().toString() + '_cancel'
+              });
+              this._triggerEvent({
+                cancelled: true,
+                orderId: this.pendingPaymentPayload.orderId
+              });
+            } catch (e) { }
+            this._clearCache();
+          }
+          if (isTerminal) {
+            this._clearCache();
+          }
+          this._cleanup();
+        } else {
+          this.ui.showCancelConfirmationModal();
+        }
+      }
+    };
+  }
+
   private _triggerEvent(eventData: IModalEventResult): void {
     if (this.onCompleteCallback) {
       try {
         this.onCompleteCallback(eventData);
-      } catch (e) {
-        console.error("[MMPay SDK] Consumer callback error:", e);
-      }
+      } catch (e) { }
     }
   }
 
-  private _checkAndAutoResume(): void {
-    const cachedData = localStorage.getItem(this.CACHE_KEY);
-    if (!cachedData) return;
-
-    try {
-      const parsed = JSON.parse(cachedData);
-
-      if (parsed.environment !== this.environment) {
-        this._clearCache();
-        return;
-      }
-
-      if (Date.now() >= parsed.expireAt) {
-        this.tokenKey = parsed.token;
-        this._clearCache();
-        return;
-      }
-
-      this.tokenKey = parsed.token;
-      this.pendingPaymentPayload = parsed.payload;
-      this.pendingApiResponse = parsed.apiResponse;
-
-      this._renderQrModalContent(this.pendingApiResponse as ICreatePaymentResponse, this.pendingPaymentPayload as ICreatePaymentRequestParams, this.merchantName);
-      this._startPolling(this.pendingPaymentPayload as IPollingRequest);
-      this._startCountdown(this.pendingPaymentPayload!.orderId, parsed.expireAt);
-    } catch (e) {
-      this._clearCache();
-    }
-  }
-
-  private async _callApi<T>(endpoint: string, data: object = {}): Promise<T> {
-    let config: any = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.publishableKey}`
-    }
-    if (this.tokenKey) {
-      config = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.publishableKey}`,
-        'X-MMPay-Btoken': `${this.tokenKey}`
-      }
-    }
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      method: 'POST',
-      headers: config,
-      body: JSON.stringify(data)
-    });
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API Error (${response.status}): ${response.statusText}. Details: ${errorText}`);
-    }
-    return response.json() as Promise<T>;
-  }
-
-  private async _callApiTokenRequest(payload: ICreateTokenRequestParams): Promise<ICreateTokenResponse> {
-    try {
-      const endpoint = this.environment === 'sandbox'
-        ? '/xpayments/sandbox-token-request'
-        : '/xpayments/production-token-request';
-      return await this._callApi<ICreateTokenResponse>(endpoint, payload);
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  private async _callApiPaymentRequest(payload: ICreatePaymentRequestParams): Promise<ICreatePaymentResponse> {
-    try {
-      const endpoint = this.environment === 'sandbox'
-        ? '/xpayments/sandbox-payment-create'
-        : '/xpayments/production-payment-create';
-      return await this._callApi<ICreatePaymentResponse>(endpoint, payload);
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  private async _callApiCancelPayment(payload: ICancelPaymentRequestParams): Promise<ICancelPaymentResponse> {
-    const endpoint = this.environment === 'sandbox'
-      ? '/xpayments/sandbox-payment-cancel'
-      : '/xpayments/production-payment-cancel';
-    return await this._callApi<ICancelPaymentResponse>(endpoint, payload);
-  }
-
-  private _clearCache(): void {
-    localStorage.removeItem(this.CACHE_KEY);
-  }
-
-  public async createPayment(params: ICreatePaymentRequestParams): Promise<ICreatePaymentResponse> {
-    const tokenPayload: ICreateTokenRequestParams = {
-      amount: params.amount,
-      orderId: params.orderId,
-      nonce: new Date().getTime().toString() + '_mmp'
-    }
-    const paymentPayload: ICreatePaymentRequestParams = {
-      amount: params.amount,
-      orderId: params.orderId,
-      callbackUrl: params.callbackUrl,
-      customMessage: params.customMessage,
-      nonce: new Date().getTime().toString() + '_mmp'
-    }
-    try {
-      const tokenResponse = await this._callApiTokenRequest(tokenPayload);
-      this.tokenKey = tokenResponse.token as string;
-      return await this._callApiPaymentRequest(paymentPayload);
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  public async showPaymentModal(
-    params: ICreatePaymentRequestParams,
-    onComplete: (result: IModalEventResult) => void
-  ): Promise<void> {
-    this.onCompleteCallback = onComplete;
-
-    const cachedData = localStorage.getItem(this.CACHE_KEY);
-    if (cachedData) {
-      try {
-        const parsed = JSON.parse(cachedData);
-
-        if (parsed.environment === this.environment && Date.now() < parsed.expireAt) {
-          this.tokenKey = parsed.token;
-          this.pendingPaymentPayload = parsed.payload;
-          this.pendingApiResponse = parsed.apiResponse;
-
-          this._renderQrModalContent(this.pendingApiResponse as ICreatePaymentResponse, this.pendingPaymentPayload as ICreatePaymentRequestParams, this.merchantName);
-          this._startPolling(this.pendingPaymentPayload as IPollingRequest);
-          this._startCountdown(this.pendingPaymentPayload!.orderId, parsed.expireAt);
-
-          this._triggerEvent({
-            created: true,
-            orderId: this.pendingPaymentPayload!.orderId,
-            transactionId: this.pendingApiResponse!.transactionRefId,
-            transactionRefId: this.pendingApiResponse!.transactionRefId
-          });
-          return;
-        } else {
-          this.tokenKey = parsed.token;
-          this._clearCache();
-        }
-      } catch (e) {
-        this._clearCache();
-      }
-    }
-
-    this._createAndRenderModal(_getPreloadScreen(this.design), false);
-
-    const tokenPayload: ICreateTokenRequestParams = {
-      amount: params.amount,
-      orderId: params.orderId,
-      nonce: new Date().getTime().toString() + '_mmp'
-    }
-    const paymentPayload: ICreatePaymentRequestParams = {
-      amount: params.amount,
-      orderId: params.orderId,
-      callbackUrl: params.callbackUrl,
-      customMessage: params.customMessage,
-      nonce: new Date().getTime().toString() + '_mmp'
-    }
-
-    const expireAt = Date.now() + (this.TIMEOUT_SECONDS * 1000);
-
-    try {
-      const apiCallSequence = async () => {
-        const tokenResponse = await this._callApiTokenRequest(tokenPayload);
-        this.tokenKey = tokenResponse.token as string;
-        return await this._callApiPaymentRequest(paymentPayload);
-      };
-
-      const startTime = Date.now();
-      let apiResponse: ICreatePaymentResponse | undefined;
-      let apiError: any;
-
-      try {
-        apiResponse = await apiCallSequence();
-      } catch (e) {
-        apiError = e;
-      }
-
-      const elapsed = Date.now() - startTime;
-      if (elapsed < 1500) {
-        await new Promise(resolve => setTimeout(resolve, 1500 - elapsed));
-      }
-
-      if (apiError) {
-        throw apiError;
-      }
-
-      if (apiResponse && apiResponse.qr && apiResponse.transactionRefId) {
-        this.pendingApiResponse = apiResponse;
-        this.pendingPaymentPayload = paymentPayload;
-
-        localStorage.setItem(this.CACHE_KEY, JSON.stringify({
-          payload: paymentPayload,
-          apiResponse: apiResponse,
-          expireAt: expireAt,
-          token: this.tokenKey,
-          environment: this.environment
-        }));
-
-        this._renderQrModalContent(apiResponse, paymentPayload, this.merchantName);
-        this._startPolling(paymentPayload);
-        this._startCountdown(paymentPayload.orderId, expireAt);
-
-        this._triggerEvent({
-          created: true,
-          orderId: paymentPayload.orderId,
-          transactionId: apiResponse.transactionRefId,
-          transactionRefId: apiResponse.transactionRefId
-        });
-      } else {
-        throw new Error("Invalid API Response: Missing QR Data or Reference ID.");
-      }
-    } catch (error: any) {
-      this.tokenKey = null;
-      console.error("[MMPay SDK Error]:", error);
-
-      const errMessage = error?.message || 'Error occurred while starting payment.';
-      const terminalMsg = `<span class="en-text">${errMessage}</span><span class="mm-text">ငွေပေးချေမှု စတင်စဉ် အမှားအယွင်း ဖြစ်ပွားသည်။</span>`;
-
-      this._showTerminalMessage(paymentPayload.orderId || 'N/A', 'FAILED', terminalMsg);
-
-      this._triggerEvent({
-        failed: true,
-        orderId: paymentPayload.orderId
-      });
-    }
-  }
-
-  private _createAndRenderModal(contentHtml: string, isTerminal: boolean = false): HTMLDivElement {
-    this._cleanupModal(false);
-    const overlay = document.createElement('div');
-    overlay.id = 'mmpay-full-modal';
-    overlay.className = 'mmpay-lang-en';
-    document.body.appendChild(overlay);
-    this.overlayElement = overlay;
-
-    const style = document.createElement('style');
-    style.innerHTML = _getContentCoreCss(this.design);
-    overlay.appendChild(style);
-    window.MMPayToggleLang = (lang) => {
-      const modal = document.getElementById('mmpay-full-modal');
-      if (modal) modal.className = 'mmpay-lang-' + lang;
-    };
-
-    window.MMPayCloseModal = async (forceClose = false) => {
-      if (isTerminal || forceClose) {
-        if (forceClose && !isTerminal && this.pendingPaymentPayload) {
-          try {
-            await this._callApiCancelPayment({
-              orderId: this.pendingPaymentPayload.orderId,
-              nonce: new Date().getTime().toString() + '_cancel'
-            });
-
-            this._triggerEvent({
-              cancelled: true,
-              orderId: this.pendingPaymentPayload.orderId
-            });
-          } catch (e) {
-
-          }
-          this._clearCache();
-        }
-
-        if (isTerminal) {
-          this._clearCache();
-        }
-
-        this._cleanupModal(true);
-      } else {
-        this._showCancelConfirmationModal();
-      }
-    };
-
-    window.MMPayReRenderModal = () => this._reRenderPendingModalInstance();
-
-    overlay.innerHTML += `
-      <div class="mmpay-overlay-content">${contentHtml}</div>
-    `;
-
-    document.body.style.overflow = 'hidden';
-    return overlay;
-  }
-
-  private _renderQrModalContent(apiResponse: ICreatePaymentResponse, payload: ICreatePaymentRequestParams, merchantName: string): void {
-    const qrData = apiResponse.qr;
-    const formattedAmount = apiResponse.amount.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
-    const qrContainerId = 'mmpayQrContainerBox';
-    const orderId = payload.orderId;
-    window.MMPayDownloadQR = function () {
-      const container = document.getElementById(qrContainerId);
-      if (!container) return;
-      const canvas = container.querySelector('canvas');
-      const img = container.querySelector('img');
-      try {
-        let dataURL = '';
-        if (canvas) {
-          dataURL = canvas.toDataURL('image/png');
-        } else if (img) {
-          dataURL = img.src;
-        }
-
-        if (dataURL) {
-          const link = document.createElement('a');
-          link.href = dataURL;
-          link.download = `MMPay-QR-${orderId}.png`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        }
-      } catch (e) {
-      }
-    }
-    const qrContentHtml = _getContentQRDisplay(qrContainerId, merchantName, formattedAmount, apiResponse, this.design);
-    this._cleanupModal(false);
-    this._createAndRenderModal(qrContentHtml, false);
-    this._injectQrScript(qrData, qrContainerId);
-  }
-
-  private _showTerminalMessage(orderId: string, status: 'SUCCESS' | 'FAILED' | 'EXPIRED', messageHtml: string): void {
-    this._cleanupModal(true);
-    const isSuccess = status === 'SUCCESS';
-    const content = _getContentAfterModal(isSuccess, orderId, messageHtml, this.design)
-    this._createAndRenderModal(content, true);
-  }
-
-  private _showCancelConfirmationModal(): void {
-    const overlayContent = this.overlayElement?.querySelector('.mmpay-overlay-content');
-    if (!overlayContent) return;
-    const qrView = overlayContent.querySelector('.mmpay-qr-view') as HTMLElement;
-    if (qrView) {
-      qrView.style.display = 'none';
-    }
-    let cancelView = document.getElementById('mmpay-cancel-view-container');
-    if (cancelView) {
-      cancelView.style.display = 'flex';
-      return;
-    }
-    const content = _getContentCancelModal(this.design);
-    overlayContent.insertAdjacentHTML('beforeend', content);
-  }
-
-  private _reRenderPendingModalInstance(): void {
-    const cancelView = document.getElementById('mmpay-cancel-view-container');
-    if (cancelView) {
-      cancelView.style.display = 'none';
-    }
-    const overlayContent = this.overlayElement?.querySelector('.mmpay-overlay-content');
-    if (overlayContent) {
-      const qrView = overlayContent.querySelector('.mmpay-qr-view') as HTMLElement;
-      if (qrView) {
-        qrView.style.display = 'flex';
-      }
-    }
-  }
-
-  private _cleanupModal(restoreBodyScroll: boolean): void {
+  private _cleanup(): void {
     if (this.pollIntervalId !== undefined) {
       window.clearInterval(this.pollIntervalId);
       this.pollIntervalId = undefined;
@@ -446,89 +105,167 @@ export class MMPaySDK {
       window.clearInterval(this.countdownIntervalId);
       this.countdownIntervalId = undefined;
     }
-    if (this.overlayElement && this.overlayElement.parentNode) {
-      this.overlayElement.parentNode.removeChild(this.overlayElement);
-      this.overlayElement = null;
-    }
-    if (restoreBodyScroll) {
-      document.body.style.overflow = '';
-    }
-    delete window.MMPayCloseModal;
-    delete window.MMPayReRenderModal;
+    this.ui.cleanupModal(true);
   }
 
+  private _clearCache(): void {
+    localStorage.removeItem(this.CACHE_KEY);
+  }
 
+  private _checkAndAutoResume(): void {
+    const cachedData = localStorage.getItem(this.CACHE_KEY);
+    if (!cachedData) return;
 
-  private _injectQrScript(qrData: string, qrContainerId: string): void {
-    const initQR = () => {
-      const container = document.getElementById(qrContainerId);
-      if (!container) return;
-
-      if (typeof (window as any).QRCode !== 'undefined' && typeof (window as any).QRCode.toCanvas === 'function') {
-        container.innerHTML = '';
-        const canvas = document.createElement('canvas');
-        container.appendChild(canvas);
-
-        (window as any).QRCode.toCanvas(canvas, qrData, {
-          width: this.QR_SIZE,
-          margin: 1,
-          color: {dark: "#000000", light: "#ffffff"},
-          errorCorrectionLevel: 'M'
-        }, function (error: any) {
-          if (error) console.error("[MMPay SDK] QR Generation Error:", error);
-        });
-      } else {
-        console.error("[MMPay SDK] Modern QRCode library failed to bind to window.");
-      }
-    };
-
-    // 1. If it's already successfully loaded in memory, use it immediately
-    if (typeof (window as any).QRCode !== 'undefined' && typeof (window as any).QRCode.toCanvas === 'function') {
-      setTimeout(initQR, 50);
-      return;
-    }
-
-    // 2. Force clear legacy libraries just in case
-    if (typeof (window as any).QRCode !== 'undefined') {
-      try {
-        delete (window as any).QRCode;
-      } catch (e) { }
-    }
-
-    // 3. Multi-CDN Fallback Array (Defends against ISP blocks)
-    const cdnUrls = [
-      "https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js", // Primary: jsDelivr
-      "https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js",            // Fallback 1: Unpkg
-      "https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js" // Fallback 2: Cloudflare
-    ];
-
-    let currentCdnIndex = 0;
-
-    const loadNextCdn = () => {
-      if (currentCdnIndex >= cdnUrls.length) {
-        console.error("[MMPay SDK] CRITICAL: All CDNs blocked or failed to load the QR library.");
+    try {
+      const parsed = JSON.parse(cachedData);
+      if (parsed.environment !== this.environment || Date.now() >= parsed.expireAt) {
+        this._clearCache();
         return;
       }
-
-      const script = document.createElement('script');
-      script.src = cdnUrls[currentCdnIndex];
-
-      script.onload = () => setTimeout(initQR, 50);
-
-      script.onerror = () => {
-        console.warn(`[MMPay SDK] Failed to fetch from CDN: ${cdnUrls[currentCdnIndex]}. Trying next fallback...`);
-        currentCdnIndex++;
-        loadNextCdn(); // Recursively try the next URL in the array
-      };
-
-      document.head.appendChild(script);
-    };
-
-    // Start the loading process
-    loadNextCdn();
+      this.api.setToken(parsed.token);
+      this._resumePaymentState(parsed.apiResponse, parsed.payload, parsed.expireAt);
+    } catch (e) {
+      this._clearCache();
+    }
   }
 
+  private _resumePaymentState(apiResponse: any, payload: any, expireAt: number): void {
+    this.pendingPaymentPayload = payload;
+    this.pendingApiResponse = apiResponse;
 
+    this.ui.renderQrModalContent(apiResponse, payload.orderId, this.merchantName, this._getGlobalHandlers());
+    this._startPolling(payload);
+    this._startCountdown(payload.orderId, expireAt);
+
+    this._triggerEvent({
+      created: true,
+      orderId: payload.orderId,
+      transactionId: apiResponse.transactionRefId,
+      transactionRefId: apiResponse.transactionRefId
+    });
+  }
+
+  public async createPayment(params: ICreatePaymentRequestParams): Promise<ICreatePaymentResponse> {
+    const nonce = new Date().getTime().toString() + '_mmp';
+    const tokenResponse = await this.api.createToken({amount: params.amount, orderId: params.orderId, nonce});
+    this.api.setToken(tokenResponse.token);
+    return this.api.createPayment({...params, nonce});
+  }
+
+  public async showPaymentModal(params: ICreatePaymentRequestParams, onComplete: (result: IModalEventResult) => void): Promise<void> {
+    this.onCompleteCallback = onComplete;
+
+    const cachedData = localStorage.getItem(this.CACHE_KEY);
+    if (cachedData) {
+      try {
+        const parsed = JSON.parse(cachedData);
+        if (parsed.environment === this.environment && Date.now() < parsed.expireAt) {
+          this.api.setToken(parsed.token);
+          this._resumePaymentState(parsed.apiResponse, parsed.payload, parsed.expireAt);
+          return;
+        } else {
+          this._clearCache();
+        }
+      } catch (e) {
+        this._clearCache();
+      }
+    }
+
+    this.ui.renderPreloadScreen(this._getGlobalHandlers());
+    const expireAt = Date.now() + (this.TIMEOUT_SECONDS * 1000);
+
+    try {
+      const startTime = Date.now();
+      const nonce = new Date().getTime().toString() + '_mmp';
+
+      const tokenResponse = await this.api.createToken({amount: params.amount, orderId: params.orderId, nonce});
+      this.api.setToken(tokenResponse.token);
+
+      const paymentPayload = {...params, nonce};
+      const apiResponse = await this.api.createPayment(paymentPayload);
+
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 1500) await new Promise(resolve => setTimeout(resolve, 1500 - elapsed));
+
+      if (apiResponse && apiResponse.qr && apiResponse.transactionRefId) {
+        localStorage.setItem(this.CACHE_KEY, JSON.stringify({
+          payload: paymentPayload,
+          apiResponse: apiResponse,
+          expireAt: expireAt,
+          token: this.api.getToken(),
+          environment: this.environment
+        }));
+        this._resumePaymentState(apiResponse, paymentPayload, expireAt);
+      } else {
+        throw new Error("Invalid API Response: Missing QR Data or Reference ID.");
+      }
+    } catch (error: any) {
+      this.api.setToken(null);
+      const errMessage = error?.message || 'Error occurred while starting payment.';
+      const terminalMsg = `<span class="en-text">${errMessage}</span><span class="mm-text">ငွေပေးချေမှု စတင်စဉ် အမှားအယွင်း ဖြစ်ပွားသည်။</span>`;
+      this.ui.showTerminalMessage(params.orderId || 'N/A', 'FAILED', terminalMsg, this._getGlobalHandlers(true));
+      this._triggerEvent({failed: true, orderId: params.orderId});
+    }
+  }
+
+  public async pay(orderId: string, onComplete: (result: IModalEventResult) => void): Promise<void> {
+    this.onCompleteCallback = onComplete;
+
+    const cachedData = localStorage.getItem(this.CACHE_KEY);
+    if (cachedData) {
+      try {
+        const parsed = JSON.parse(cachedData);
+        if (parsed.environment === this.environment && Date.now() < parsed.expireAt && parsed.payload.orderId === orderId) {
+          this.api.setToken(parsed.token);
+          this._resumePaymentState(parsed.apiResponse, parsed.payload, parsed.expireAt);
+          return;
+        } else {
+          this._clearCache();
+        }
+      } catch (e) {
+        this._clearCache();
+      }
+    }
+
+    this.ui.renderPreloadScreen(this._getGlobalHandlers());
+    const showPayload: IPaymentShowRequestParams = {orderId, nonce: new Date().getTime().toString() + '_show'};
+    const expireAt = Date.now() + (this.TIMEOUT_SECONDS * 1000);
+
+    try {
+      const startTime = Date.now();
+      const apiResponse = await this.api.showPayment(showPayload);
+
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 1500) await new Promise(resolve => setTimeout(resolve, 1500 - elapsed));
+
+      if (apiResponse && apiResponse.qr && apiResponse.transactionRefId) {
+        const mappedPaymentResponse: ICreatePaymentResponse = {
+          amount: apiResponse.amount,
+          orderId: apiResponse.orderId,
+          transactionRefId: apiResponse.transactionRefId,
+          qr: apiResponse.qr
+        };
+        const mappedPaymentPayload = {amount: apiResponse.amount, orderId: apiResponse.orderId, nonce: showPayload.nonce};
+
+        localStorage.setItem(this.CACHE_KEY, JSON.stringify({
+          payload: mappedPaymentPayload,
+          apiResponse: mappedPaymentResponse,
+          expireAt: expireAt,
+          token: this.api.getToken(),
+          environment: this.environment
+        }));
+        this._resumePaymentState(mappedPaymentResponse, mappedPaymentPayload, expireAt);
+      } else {
+        throw new Error("Invalid API Response: Missing QR Data or Reference ID.");
+      }
+    } catch (error: any) {
+      this.api.setToken(null);
+      const errMessage = error?.message || 'Error occurred while loading payment.';
+      const terminalMsg = `<span class="en-text">${errMessage}</span><span class="mm-text">ငွေပေးချေမှု စတင်စဉ် အမှားအယွင်း ဖြစ်ပွားသည်။</span>`;
+      this.ui.showTerminalMessage(orderId || 'N/A', 'FAILED', terminalMsg, this._getGlobalHandlers(true));
+      this._triggerEvent({failed: true, orderId: orderId});
+    }
+  }
 
   private async _startPolling(payload: IPollingRequest): Promise<void> {
     if (this.pollIntervalId !== undefined) {
@@ -536,22 +273,11 @@ export class MMPaySDK {
     }
     const checkStatus = async () => {
       try {
-        const endpoint = this.environment === 'sandbox'
-          ? '/xpayments/sandbox-payment-polling'
-          : '/xpayments/production-payment-polling';
-
-        const response = await this._callApi<IPollingResponse>(endpoint, payload);
+        const response = await this.api.pollPayment(payload);
         const status = (response.status || '').toUpperCase();
 
         if (status === 'SUCCESS' || status === 'FAILED' || status === 'EXPIRED') {
-          window.clearInterval(this.pollIntervalId);
-          this.pollIntervalId = undefined;
-
-          if (this.countdownIntervalId !== undefined) {
-            window.clearInterval(this.countdownIntervalId);
-            this.countdownIntervalId = undefined;
-          }
-
+          this._cleanup();
           this._clearCache();
 
           const success = status === 'SUCCESS';
@@ -561,9 +287,9 @@ export class MMPaySDK {
             `<span class="en-text">Payment ${status === 'FAILED' ? 'failed' : 'expired'}.</span>
              <span class="mm-text">ငွေပေးချေမှု ${status === 'FAILED' ? 'မအောင်မြင်ပါ' : 'သက်တမ်းကုန်သွားပါပြီ'}။</span>`;
 
-          this._showTerminalMessage(response.orderId || 'N/A', status as 'SUCCESS' | 'FAILED' | 'EXPIRED', messageHtml);
+          this.ui.showTerminalMessage(response.orderId || 'N/A', status as 'SUCCESS' | 'FAILED' | 'EXPIRED', messageHtml, this._getGlobalHandlers(true));
+          this.api.setToken(null);
 
-          this.tokenKey = null;
           this._triggerEvent({
             success: status === 'SUCCESS',
             failed: status === 'FAILED',
@@ -572,10 +298,8 @@ export class MMPaySDK {
             transactionId: response.transactionRefId,
             transactionRefId: response.transactionRefId
           });
-          return;
         }
-      } catch (error) {
-      }
+      } catch (error) { }
     };
     checkStatus();
     this.pollIntervalId = window.setInterval(checkStatus, this.POLL_INTERVAL_MS);
@@ -585,11 +309,9 @@ export class MMPaySDK {
     if (this.countdownIntervalId !== undefined) {
       window.clearInterval(this.countdownIntervalId);
     }
-
     const updateDisplay = () => {
       const timerElement = document.getElementById('mmpay-countdown-text');
       const remaining = Math.max(0, Math.floor((expireAt - Date.now()) / 1000));
-
       if (timerElement) {
         const minutes = Math.floor(remaining / 60);
         const seconds = remaining % 60;
@@ -597,30 +319,19 @@ export class MMPaySDK {
       }
       return remaining;
     }
-
     let currentRemaining = updateDisplay();
-
     this.countdownIntervalId = window.setInterval(async () => {
       currentRemaining = updateDisplay();
-
       if (currentRemaining <= 0) {
-        window.clearInterval(this.countdownIntervalId);
-        this.countdownIntervalId = undefined;
-        if (this.pollIntervalId !== undefined) {
-          window.clearInterval(this.pollIntervalId);
-          this.pollIntervalId = undefined;
-        }
-
+        this._cleanup();
         this._clearCache();
-        this._showTerminalMessage(orderId, 'EXPIRED', '<span class="en-text">Time expired.</span><span class="mm-text">သတ်မှတ်ချိန်ကုန်သွားပါပြီ။</span>');
-
-        this._triggerEvent({
-          expired: true,
-          orderId: orderId
-        });
+        this.ui.showTerminalMessage(orderId, 'EXPIRED', '<span class="en-text">Time expired.</span><span class="mm-text">သတ်မှတ်ချိန်ကုန်သွားပါပြီ။</span>', this._getGlobalHandlers(true));
+        this._triggerEvent({expired: true, orderId: orderId});
       }
     }, 1000);
   }
 }
 
-(window as any).MMPaySDK = MMPaySDK;
+if (typeof window !== 'undefined') {
+  (window as any).MMPaySDK = MMPaySDK;
+}
