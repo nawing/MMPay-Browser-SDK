@@ -25,7 +25,6 @@ The `MMPaySDK` class provides two distinct methods to suit different integration
 #### **Example Implementation**
 ```javascript
 const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
-    baseUrl:  'https://xxx.myanmyanpay.com', // [Optional - Use Only For Enterprise]
     merchantName:  'Your Shop Name',
     design: {
         mode: 'dark', // dark | dark-translucent | light | light-translucent
@@ -34,10 +33,8 @@ const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
 });
 ```
 
-
 ##### Step 3: 🚀 Call Modal Object
 ### `pay()` (Recommended: UI + Polling)
-This is the easiest way to integrate. This method **initiates the transaction**, **renders the UI** (QR code/Redirect link) into your container, and automatically **polls your gateway** for payment completion status, executing a callback when the payment is final.
 
 #### **Method Signature**
 ```typescript
@@ -46,7 +43,13 @@ pay(orderId: string, onComplete: Function ): Promise<void>
 
 #### **Example Implementation**
 ```javascript
-MMPayApp.pay('Order-ID-111111', (result) => { // This Order Must Be Created WIth Our Sdks or Backend Api
+MMPayApp.pay('Order-ID-111111', (result) => console.log(result));
+```
+
+#### **All Support Events**
+
+```javascript
+MMPayApp.pay('Order-ID-111111', (result) => {
     if (result.success) {
         console.log('Success: ' + result.orderId + ' : Transaction : ' + result.transactionId);
     }
@@ -59,8 +62,59 @@ MMPayApp.pay('Order-ID-111111', (result) => { // This Order Must Be Created WIth
     if (result.expired) {
         console.log('Expoired: ' + result.orderId);
     }
+})
+```
+
+##### Step 4: 🚀 Creating The Order ID & Paymennt Ref
+### `MMPay.pay()` [Establishing Source of Truth Secretly]
+
+Do this at your backend server, it is important to create a source of truth in this manner to avoid payload manipulation
+
+```bash
+npm install mmpay-node-sdk --save
+```
+
+#### **Backend Integration**
+```typescript
+// Express
+import { MMPaySDK } from 'mmpay-node-sdk';
+
+const MMPay = new MMPaySdk({
+  appId: "MMxxxxxxx",
+  publishableKey: "pk_live_abcxxxxx",
+  secretKey: "sk_live_abcxxxxx",
+  apiBaseUrl: "https://xxxxxx"
+})
+
+app.post('/create-order', async (req: Request, res: Response) => {
+    const { amount, orderId } = req.body;
+    const { qr, transactionRefId } = await MMPay.pay({ amount, orderId });
+    res.json({ qr, orderId, amount, transactionRefId })
 });
 ```
+
+#### **Frontend Integration**
+```html
+<script src="https://cdn.jsdelivr.net/npm/mmpay-browser-sdk@latest/dist/mmpay-sdk.js"></script>
+```
+
+#### **Example Implementation**
+```javascript
+const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
+    merchantName:  'Your Shop Name',
+    design: {
+        mode: 'dark', // dark | dark-translucent | light | light-translucent
+        color: '#DE3163' // #color code
+    }
+});
+
+MMPayApp.pay('Order-ID-111111', (result) => {
+    if (result.success) {
+        // Redirdect to Success Page or do SUCCESS thing
+    }
+})
+```
+
 
 
 ##### Step 4: 🚀 Call Modal Object
