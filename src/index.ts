@@ -140,8 +140,7 @@ export class MMPaySDK {
     this._triggerEvent({
       created: true,
       orderId: payload.orderId,
-      transactionId: apiResponse.transactionRefId,
-      transactionRefId: apiResponse.transactionRefId
+      vendorQrRefId: apiResponse.vendorQrRefId
     });
   }
 
@@ -187,7 +186,7 @@ export class MMPaySDK {
       const elapsed = Date.now() - startTime;
       if (elapsed < 1500) await new Promise(resolve => setTimeout(resolve, 1500 - elapsed));
 
-      if (apiResponse && apiResponse.qr && apiResponse.transactionRefId) {
+      if (apiResponse && apiResponse.qr && apiResponse.vendorQrRefId) {
         localStorage.setItem(this.CACHE_KEY, JSON.stringify({
           payload: paymentPayload,
           apiResponse: apiResponse,
@@ -253,7 +252,7 @@ export class MMPaySDK {
 
           if (status === 'SUCCESS') {
             terminalStatus = 'SUCCESS';
-            terminalMsg = `<span class="en-text">Payment successful.<br>Ref: ${apiResponse.transactionRefId || 'N/A'}</span><span class="mm-text">ငွေပေးချေမှု အောင်မြင်ပါပြီ။<br>ရည်ညွှန်းနံပါတ်: ${apiResponse.transactionRefId || 'N/A'}</span>`;
+            terminalMsg = `<span class="en-text">Payment successful.<br>Ref: ${apiResponse.vendorQrRefId || 'N/A'}</span><span class="mm-text">ငွေပေးချေမှု အောင်မြင်ပါပြီ။<br>ရည်ညွှန်းနံပါတ်: ${apiResponse.vendorQrRefId || 'N/A'}</span>`;
           } else if (status === 'CANCELLED') {
             terminalStatus = 'CANCELLED';
             terminalMsg = `<span class="en-text">Payment cancelled.</span><span class="mm-text">ငွေပေးချေမှုကို ပယ်ဖျက်လိုက်ပါသည်။</span>`;
@@ -272,16 +271,16 @@ export class MMPaySDK {
             expired: status === 'EXPIRED',
             cancelled: status === 'CANCELLED',
             orderId: apiResponse.orderId || orderId,
-            transactionRefId: apiResponse.transactionRefId
+            vendorQrRefId: apiResponse.vendorQrRefId
           });
           return;
         }
 
-        if (apiResponse.qr && apiResponse.transactionRefId) {
+        if (apiResponse.qr && apiResponse.vendorQrRefId) {
           const mappedPaymentResponse: ICreatePaymentResponse = {
             amount: apiResponse.amount,
             orderId: apiResponse.orderId,
-            transactionRefId: apiResponse.transactionRefId,
+            vendorQrRefId: apiResponse.vendorQrRefId,
             qr: apiResponse.qr
           };
           const mappedPaymentPayload = {amount: apiResponse.amount, orderId: apiResponse.orderId, nonce: showPayload.nonce};
@@ -323,8 +322,8 @@ export class MMPaySDK {
 
           let messageHtml = '';
           if (status === 'SUCCESS') {
-            messageHtml = `<span class="en-text">Payment successful.<br>Ref: ${response.transactionRefId || 'N/A'}</span>
-             <span class="mm-text">ငွေပေးချေမှု အောင်မြင်ပါပြီ။<br>ရည်ညွှန်းနံပါတ်: ${response.transactionRefId || 'N/A'}</span>`;
+            messageHtml = `<span class="en-text">Payment successful.<br>Ref: ${response.vendorQrRefId || 'N/A'}</span>
+             <span class="mm-text">ငွေပေးချေမှု အောင်မြင်ပါပြီ။<br>ရည်ညွှန်းနံပါတ်: ${response.vendorQrRefId || 'N/A'}</span>`;
           } else if (status === 'CANCELLED') {
             messageHtml = `<span class="en-text">Payment cancelled.</span>
              <span class="mm-text">ငွေပေးချေမှုကို ပယ်ဖျက်လိုက်ပါသည်။</span>`;
@@ -342,8 +341,7 @@ export class MMPaySDK {
             expired: status === 'EXPIRED',
             cancelled: status === 'CANCELLED',
             orderId: response.orderId,
-            transactionId: response.transactionRefId,
-            transactionRefId: response.transactionRefId
+            vendorQrRefId: response.vendorQrRefId
           });
         }
       } catch (error) { }

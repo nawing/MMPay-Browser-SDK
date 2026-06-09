@@ -1,7 +1,7 @@
 import {IDesignOptions} from './types';
 
 export function _getContentCancelModal(design?: IDesignOptions): string {
-  return `
+    return `
 <div id="mmpay-cancel-view-container" class="mmpay-card" style="padding: 64px 24px 32px 24px; box-sizing: border-box; width: 100%;">
     <div class="mmpay-toggle-container">
         <button class="mmpay-toggle-btn btn-en" onclick="MMPayToggleLang('en')">EN</button>
@@ -34,17 +34,17 @@ export function _getContentCancelModal(design?: IDesignOptions): string {
 }
 
 export function _getContentCoreCss(design?: IDesignOptions): string {
-  const mode = design?.mode || 'light';
-  const isDark = mode.includes('dark');
-  const isTranslucent = mode.includes('translucent');
+    const mode = design?.mode || 'light';
+    const isDark = mode.includes('dark');
+    const isTranslucent = mode.includes('translucent');
 
-  let cardBg = isDark ? '#1c1c1e' : '#ffffff';
-  if (isTranslucent) {
-    cardBg = isDark ? 'rgba(28, 28, 30, 0.75)' : 'rgba(255, 255, 255, 0.75)';
-  }
-  const backdrop = isTranslucent ? 'blur(20px)' : 'none';
+    let cardBg = isDark ? '#1c1c1e' : '#ffffff';
+    if (isTranslucent) {
+        cardBg = isDark ? 'rgba(28, 28, 30, 0.75)' : 'rgba(255, 255, 255, 0.75)';
+    }
+    const backdrop = isTranslucent ? 'blur(20px)' : 'none';
 
-  return `
+    return `
 @import url('https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&display=swap');
 #mmpay-full-modal {
   --mmp-card-bg: ${cardBg};
@@ -113,12 +113,12 @@ export function _getContentCoreCss(design?: IDesignOptions): string {
 
 
 export function _getContentQRDisplay(qrContainerId: string, merchantName: string, formattedAmount: string, apiResponse: any, design?: IDesignOptions): string {
-  let customBtnStyle = '';
-  if (design?.color) {
-    customBtnStyle = `style="background-color: ${design.color} !important; color: #ffffff !important;"`;
-  }
+    let customBtnStyle = '';
+    if (design?.color) {
+        customBtnStyle = `style="background-color: ${design.color} !important; color: #ffffff !important;"`;
+    }
 
-  return `
+    return `
       <style>
         .mmpay-qr-view { padding: 64px 20px 24px 20px; box-sizing: border-box; width: 100%; display: flex; flex-direction: column; justify-content: center; }
         .mmpay-header { color: var(--mmp-text-sub); font-size: 1rem; font-weight: 500; margin-bottom: 6px; }
@@ -174,8 +174,8 @@ export function _getContentQRDisplay(qrContainerId: string, merchantName: string
                   <strong>${apiResponse.orderId}</strong>
               </div>
               <div class="mmpay-detail" style="margin-top: 8px;">
-                  <span><span class="en-text">Transaction Ref</span><span class="mm-text">ငွေပေးငွေယူနံပါတ်</span></span>
-                  <strong>${apiResponse.transactionRefId}</strong>
+                  <span><span class="en-text">MMQR Ref No</span><span class="mm-text">ငွေပေးငွေယူနံပါတ်</span></span>
+                  <strong>${apiResponse.vendorQrRefId}</strong>
               </div>
           </div>
           <button class="mmpay-button" ${customBtnStyle} onclick="MMPayDownloadQR()">
@@ -188,31 +188,31 @@ export function _getContentQRDisplay(qrContainerId: string, merchantName: string
 
 
 export function _getContentAfterModal(status: 'SUCCESS' | 'FAILED' | 'EXPIRED' | 'CANCELLED', orderId: string, messageHtml: string, design?: IDesignOptions): string {
-  const isSuccess = status === 'SUCCESS';
-  const isCancelled = status === 'CANCELLED';
+    const isSuccess = status === 'SUCCESS';
+    const isCancelled = status === 'CANCELLED';
 
-  const iconColor = isSuccess ? '#34c759' : (isCancelled ? '#ff9500' : '#ff3b30');
-  const iconBgVar = isSuccess ? 'var(--mmp-success-bg)' : (isCancelled ? 'var(--mmp-warn-bg)' : 'var(--mmp-fail-bg)');
+    const iconColor = isSuccess ? '#34c759' : (isCancelled ? '#ff9500' : '#ff3b30');
+    const iconBgVar = isSuccess ? 'var(--mmp-success-bg)' : (isCancelled ? 'var(--mmp-warn-bg)' : 'var(--mmp-fail-bg)');
 
-  let iconSvg: string;
-  let statusTextEn: string;
-  let statusTextMm: string;
+    let iconSvg: string;
+    let statusTextEn: string;
+    let statusTextMm: string;
 
-  if (isSuccess) {
-    statusTextEn = 'Success';
-    statusTextMm = 'အောင်မြင်ပါသည်';
-    iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="${iconColor}" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>`;
-  } else if (isCancelled) {
-    statusTextEn = 'Cancelled';
-    statusTextMm = 'ပယ်ဖျက်လိုက်ပါသည်';
-    iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="${iconColor}" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>`;
-  } else {
-    statusTextEn = status === 'EXPIRED' ? 'Expired' : 'Failed';
-    statusTextMm = status === 'EXPIRED' ? 'အချိန်ကျော်လွန်သွားပါပြီ' : 'မအောင်မြင်ပါ';
-    iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="${iconColor}" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>`;
-  }
+    if (isSuccess) {
+        statusTextEn = 'Success';
+        statusTextMm = 'အောင်မြင်ပါသည်';
+        iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="${iconColor}" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>`;
+    } else if (isCancelled) {
+        statusTextEn = 'Cancelled';
+        statusTextMm = 'ပယ်ဖျက်လိုက်ပါသည်';
+        iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="${iconColor}" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>`;
+    } else {
+        statusTextEn = status === 'EXPIRED' ? 'Expired' : 'Failed';
+        statusTextMm = status === 'EXPIRED' ? 'အချိန်ကျော်လွန်သွားပါပြီ' : 'မအောင်မြင်ပါ';
+        iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="${iconColor}" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>`;
+    }
 
-  return `
+    return `
 <div class="mmpay-card" style="padding: 64px 24px 32px 24px; box-sizing: border-box; width: 100%;">
     <div class="mmpay-toggle-container">
         <button class="mmpay-toggle-btn btn-en" onclick="MMPayToggleLang('en')">EN</button>
@@ -239,7 +239,7 @@ export function _getContentAfterModal(status: 'SUCCESS' | 'FAILED' | 'EXPIRED' |
 }
 
 export function _getPreloadScreen(design?: IDesignOptions): string {
-  return `
+    return `
       <style>
         @keyframes mmpayGodSweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
         @keyframes mmpayPulseSoft { 0%, 100% { opacity: 0.9; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); filter: drop-shadow(0 8px 16px rgba(0,0,0,0.06)); } }

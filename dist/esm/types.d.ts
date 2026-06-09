@@ -27,7 +27,7 @@ export interface ICreatePaymentRequestParams {
 export interface ICreatePaymentResponse {
     amount: number;
     orderId: string;
-    transactionRefId: string;
+    vendorQrRefId: string;
     qr: string;
 }
 export interface IPaymentShowRequestParams {
@@ -39,7 +39,7 @@ export interface IPaymentShowResponse {
     amount: number;
     status: 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED' | 'CANCELLED' | 'EXPIRED';
     currency: string;
-    transactionRefId: string;
+    vendorQrRefId: string;
     qr: string;
     createdAt: string;
 }
@@ -56,7 +56,7 @@ export interface IPollingRequest {
 }
 export interface IPollingResponse {
     status: 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED' | 'CANCELLED' | 'EXPIRED';
-    transactionRefId?: string;
+    vendorQrRefId?: string;
     orderId?: string;
 }
 export interface IModalEventResult {
@@ -66,6 +66,5 @@ export interface IModalEventResult {
     expired?: boolean;
     failed?: boolean;
     orderId?: string;
-    transactionId?: string;
-    transactionRefId?: string;
+    vendorQrRefId?: string;
 }
