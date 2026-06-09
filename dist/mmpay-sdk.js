@@ -415,6 +415,7 @@
             var baseUrl = options.baseUrl || 'https://browser-engine-production.up.railway.app';
             this.merchantName = options.merchantName || 'MyanMyanPay';
             this.POLL_INTERVAL_MS = options.pollInterval || 5000;
+            // Dependency Instantiation
             this.api = new MMPayAPI(baseUrl, this.environment, publishableKey);
             this.ui = new MMPayUI({
                 mode: ((_a = options.design) === null || _a === void 0 ? void 0 : _a.mode) || 'light',
@@ -524,18 +525,21 @@
         MMPaySDK.prototype._resumePaymentState = function (apiResponse, payload, expireAt) {
             this.pendingPaymentPayload = payload;
             this.pendingApiResponse = apiResponse;
+            // Strict Fallback Normalization
+            var actualRefId = apiResponse.vendorQrRefId || apiResponse.transactionRefId;
+            apiResponse.vendorQrRefId = actualRefId;
             this.ui.renderQrModalContent(apiResponse, payload.orderId, this.merchantName, this._getGlobalHandlers());
             this._startPolling(payload);
             this._startCountdown(payload.orderId, expireAt);
             this._triggerEvent({
                 created: true,
                 orderId: payload.orderId,
-                vendorQrRefId: apiResponse.vendorQrRefId
+                vendorQrRefId: actualRefId
             });
         };
         MMPaySDK.prototype.createPayment = function (params) {
             return __awaiter(this, void 0, void 0, function () {
-                var nonce, tokenResponse;
+                var nonce, tokenResponse, response;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
@@ -544,14 +548,18 @@
                         case 1:
                             tokenResponse = _a.sent();
                             this.api.setToken(tokenResponse.token);
-                            return [2 /*return*/, this.api.createPayment(__assign(__assign({}, params), { nonce: nonce }))];
+                            return [4 /*yield*/, this.api.createPayment(__assign(__assign({}, params), { nonce: nonce }))];
+                        case 2:
+                            response = _a.sent();
+                            response.vendorQrRefId = response.vendorQrRefId || response.transactionRefId;
+                            return [2 /*return*/, response];
                     }
                 });
             });
         };
         MMPaySDK.prototype.showPaymentModal = function (params, onComplete) {
             return __awaiter(this, void 0, void 0, function () {
-                var cachedData, parsed, expireAt, startTime, nonce, tokenResponse, paymentPayload, apiResponse, elapsed_1, error_1, errMessage, terminalMsg;
+                var cachedData, parsed, expireAt, startTime, nonce, tokenResponse, paymentPayload, apiResponse, elapsed_1, actualRefId, error_1, errMessage, terminalMsg;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
@@ -595,7 +603,9 @@
                             _a.sent();
                             _a.label = 5;
                         case 5:
-                            if (apiResponse && apiResponse.qr && apiResponse.vendorQrRefId) {
+                            actualRefId = (apiResponse === null || apiResponse === void 0 ? void 0 : apiResponse.vendorQrRefId) || (apiResponse === null || apiResponse === void 0 ? void 0 : apiResponse.transactionRefId);
+                            if (apiResponse && apiResponse.qr && actualRefId) {
+                                apiResponse.vendorQrRefId = actualRefId; // Enforce explicit property map
                                 localStorage.setItem(this.CACHE_KEY, JSON.stringify({
                                     payload: paymentPayload,
                                     apiResponse: apiResponse,
@@ -624,7 +634,7 @@
         };
         MMPaySDK.prototype.pay = function (orderId, onComplete) {
             return __awaiter(this, void 0, void 0, function () {
-                var cachedData, parsed, showPayload, expireAt, startTime, tokenNonce, tokenResponse, apiResponse, elapsed_2, status_1, terminalStatus, terminalMsg, mappedPaymentResponse, mappedPaymentPayload, error_2, errMessage, terminalMsg;
+                var cachedData, parsed, showPayload, expireAt, startTime, tokenNonce, tokenResponse, apiResponse, elapsed_2, status_1, actualRefId, terminalStatus, terminalMsg, mappedPaymentResponse, mappedPaymentPayload, error_2, errMessage, terminalMsg;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
@@ -670,13 +680,14 @@
                         case 5:
                             if (apiResponse) {
                                 status_1 = (apiResponse.status || '').toUpperCase();
+                                actualRefId = apiResponse.vendorQrRefId || apiResponse.transactionRefId;
                                 if (status_1 !== 'PENDING') {
                                     this._clearCache();
                                     terminalStatus = 'FAILED';
                                     terminalMsg = '';
                                     if (status_1 === 'SUCCESS') {
                                         terminalStatus = 'SUCCESS';
-                                        terminalMsg = "<span class=\"en-text\">Payment successful.<br>Ref: ".concat(apiResponse.vendorQrRefId || 'N/A', "</span><span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F \u1021\u1031\u102C\u1004\u103A\u1019\u103C\u1004\u103A\u1015\u102B\u1015\u103C\u102E\u104B<br>\u101B\u100A\u103A\u100A\u103D\u103E\u1014\u103A\u1038\u1014\u1036\u1015\u102B\u1010\u103A: ").concat(apiResponse.vendorQrRefId || 'N/A', "</span>");
+                                        terminalMsg = "<span class=\"en-text\">Payment successful.<br>Ref: ".concat(actualRefId || 'N/A', "</span><span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F \u1021\u1031\u102C\u1004\u103A\u1019\u103C\u1004\u103A\u1015\u102B\u1015\u103C\u102E\u104B<br>\u101B\u100A\u103A\u100A\u103D\u103E\u1014\u103A\u1038\u1014\u1036\u1015\u102B\u1010\u103A: ").concat(actualRefId || 'N/A', "</span>");
                                     }
                                     else if (status_1 === 'CANCELLED') {
                                         terminalStatus = 'CANCELLED';
@@ -696,17 +707,12 @@
                                         expired: status_1 === 'EXPIRED',
                                         cancelled: status_1 === 'CANCELLED',
                                         orderId: apiResponse.orderId || orderId,
-                                        vendorQrRefId: apiResponse.vendorQrRefId
+                                        vendorQrRefId: actualRefId
                                     });
                                     return [2 /*return*/];
                                 }
-                                if (apiResponse.qr && apiResponse.vendorQrRefId) {
-                                    mappedPaymentResponse = {
-                                        amount: apiResponse.amount,
-                                        orderId: apiResponse.orderId,
-                                        vendorQrRefId: apiResponse.vendorQrRefId,
-                                        qr: apiResponse.qr
-                                    };
+                                if (apiResponse.qr && actualRefId) {
+                                    mappedPaymentResponse = __assign(__assign({}, apiResponse), { vendorQrRefId: actualRefId });
                                     mappedPaymentPayload = { amount: apiResponse.amount, orderId: apiResponse.orderId, nonce: showPayload.nonce };
                                     localStorage.setItem(this.CACHE_KEY, JSON.stringify({
                                         payload: mappedPaymentPayload,
@@ -742,7 +748,7 @@
                         window.clearInterval(this.pollIntervalId);
                     }
                     checkStatus = function () { return __awaiter(_this, void 0, void 0, function () {
-                        var response, status_2, messageHtml;
+                        var response, status_2, actualRefId, messageHtml;
                         return __generator(this, function (_a) {
                             switch (_a.label) {
                                 case 0:
@@ -751,12 +757,13 @@
                                 case 1:
                                     response = _a.sent();
                                     status_2 = (response.status || '').toUpperCase();
+                                    actualRefId = response.vendorQrRefId || response.transactionRefId;
                                     if (status_2 === 'SUCCESS' || status_2 === 'FAILED' || status_2 === 'EXPIRED' || status_2 === 'CANCELLED') {
                                         this._cleanup();
                                         this._clearCache();
                                         messageHtml = '';
                                         if (status_2 === 'SUCCESS') {
-                                            messageHtml = "<span class=\"en-text\">Payment successful.<br>Ref: ".concat(response.vendorQrRefId || 'N/A', "</span>\n             <span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F \u1021\u1031\u102C\u1004\u103A\u1019\u103C\u1004\u103A\u1015\u102B\u1015\u103C\u102E\u104B<br>\u101B\u100A\u103A\u100A\u103D\u103E\u1014\u103A\u1038\u1014\u1036\u1015\u102B\u1010\u103A: ").concat(response.vendorQrRefId || 'N/A', "</span>");
+                                            messageHtml = "<span class=\"en-text\">Payment successful.<br>Ref: ".concat(actualRefId || 'N/A', "</span>\n             <span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F \u1021\u1031\u102C\u1004\u103A\u1019\u103C\u1004\u103A\u1015\u102B\u1015\u103C\u102E\u104B<br>\u101B\u100A\u103A\u100A\u103D\u103E\u1014\u103A\u1038\u1014\u1036\u1015\u102B\u1010\u103A: ").concat(actualRefId || 'N/A', "</span>");
                                         }
                                         else if (status_2 === 'CANCELLED') {
                                             messageHtml = "<span class=\"en-text\">Payment cancelled.</span>\n             <span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F\u1000\u102D\u102F \u1015\u101A\u103A\u1016\u103B\u1000\u103A\u101C\u102D\u102F\u1000\u103A\u1015\u102B\u101E\u100A\u103A\u104B</span>";
@@ -772,7 +779,7 @@
                                             expired: status_2 === 'EXPIRED',
                                             cancelled: status_2 === 'CANCELLED',
                                             orderId: response.orderId,
-                                            vendorQrRefId: response.vendorQrRefId
+                                            vendorQrRefId: actualRefId
                                         });
                                     }
                                     return [3 /*break*/, 3];

@@ -24,6 +24,7 @@ export class MMPaySDK {
   private pendingApiResponse: any | null = null;
   private pendingPaymentPayload: any | null = null;
 
+  // Clean Internal Dependencies
   private api: MMPayAPI;
   private ui: MMPayUI;
 
@@ -44,6 +45,7 @@ export class MMPaySDK {
     this.merchantName = options.merchantName || 'MyanMyanPay';
     this.POLL_INTERVAL_MS = options.pollInterval || 5000;
 
+    // Dependency Instantiation
     this.api = new MMPayAPI(baseUrl, this.environment, publishableKey);
     this.ui = new MMPayUI({
       mode: options.design?.mode || 'light',
@@ -133,6 +135,10 @@ export class MMPaySDK {
     this.pendingPaymentPayload = payload;
     this.pendingApiResponse = apiResponse;
 
+    // Strict Fallback Normalization
+    const actualRefId = apiResponse.vendorQrRefId || apiResponse.transactionRefId;
+    apiResponse.vendorQrRefId = actualRefId;
+
     this.ui.renderQrModalContent(apiResponse, payload.orderId, this.merchantName, this._getGlobalHandlers());
     this._startPolling(payload);
     this._startCountdown(payload.orderId, expireAt);
@@ -140,7 +146,7 @@ export class MMPaySDK {
     this._triggerEvent({
       created: true,
       orderId: payload.orderId,
-      vendorQrRefId: apiResponse.vendorQrRefId
+      vendorQrRefId: actualRefId
     });
   }
 
@@ -148,7 +154,10 @@ export class MMPaySDK {
     const nonce = new Date().getTime().toString() + '_mmp';
     const tokenResponse = await this.api.createToken({amount: params.amount, orderId: params.orderId, nonce});
     this.api.setToken(tokenResponse.token);
-    return this.api.createPayment({...params, nonce});
+
+    const response: any = await this.api.createPayment({...params, nonce});
+    response.vendorQrRefId = response.vendorQrRefId || response.transactionRefId;
+    return response as ICreatePaymentResponse;
   }
 
   public async showPaymentModal(params: ICreatePaymentRequestParams, onComplete: (result: IModalEventResult) => void): Promise<void> {
@@ -181,12 +190,17 @@ export class MMPaySDK {
       this.api.setToken(tokenResponse.token);
 
       const paymentPayload = {...params, nonce};
-      const apiResponse = await this.api.createPayment(paymentPayload);
+      const apiResponse: any = await this.api.createPayment(paymentPayload);
 
       const elapsed = Date.now() - startTime;
       if (elapsed < 1500) await new Promise(resolve => setTimeout(resolve, 1500 - elapsed));
 
-      if (apiResponse && apiResponse.qr && apiResponse.vendorQrRefId) {
+      // Robust extraction protects the UI from crashing if keys mismatch
+      const actualRefId = apiResponse?.vendorQrRefId || apiResponse?.transactionRefId;
+
+      if (apiResponse && apiResponse.qr && actualRefId) {
+        apiResponse.vendorQrRefId = actualRefId; // Enforce explicit property map
+
         localStorage.setItem(this.CACHE_KEY, JSON.stringify({
           payload: paymentPayload,
           apiResponse: apiResponse,
@@ -237,13 +251,14 @@ export class MMPaySDK {
       const tokenResponse = await this.api.createToken({orderId, nonce: tokenNonce});
       this.api.setToken(tokenResponse.token);
 
-      const apiResponse = await this.api.showPayment(showPayload);
+      const apiResponse: any = await this.api.showPayment(showPayload);
 
       const elapsed = Date.now() - startTime;
       if (elapsed < 1500) await new Promise(resolve => setTimeout(resolve, 1500 - elapsed));
 
       if (apiResponse) {
         const status = (apiResponse.status || '').toUpperCase();
+        const actualRefId = apiResponse.vendorQrRefId || apiResponse.transactionRefId;
 
         if (status !== 'PENDING') {
           this._clearCache();
@@ -252,7 +267,7 @@ export class MMPaySDK {
 
           if (status === 'SUCCESS') {
             terminalStatus = 'SUCCESS';
-            terminalMsg = `<span class="en-text">Payment successful.<br>Ref: ${apiResponse.vendorQrRefId || 'N/A'}</span><span class="mm-text">ငွေပေးချေမှု အောင်မြင်ပါပြီ။<br>ရည်ညွှန်းနံပါတ်: ${apiResponse.vendorQrRefId || 'N/A'}</span>`;
+            terminalMsg = `<span class="en-text">Payment successful.<br>Ref: ${actualRefId || 'N/A'}</span><span class="mm-text">ငွေပေးချေမှု အောင်မြင်ပါပြီ။<br>ရည်ညွှန်းနံပါတ်: ${actualRefId || 'N/A'}</span>`;
           } else if (status === 'CANCELLED') {
             terminalStatus = 'CANCELLED';
             terminalMsg = `<span class="en-text">Payment cancelled.</span><span class="mm-text">ငွေပေးချေမှုကို ပယ်ဖျက်လိုက်ပါသည်။</span>`;
@@ -271,17 +286,15 @@ export class MMPaySDK {
             expired: status === 'EXPIRED',
             cancelled: status === 'CANCELLED',
             orderId: apiResponse.orderId || orderId,
-            vendorQrRefId: apiResponse.vendorQrRefId
+            vendorQrRefId: actualRefId
           });
           return;
         }
 
-        if (apiResponse.qr && apiResponse.vendorQrRefId) {
+        if (apiResponse.qr && actualRefId) {
           const mappedPaymentResponse: ICreatePaymentResponse = {
-            amount: apiResponse.amount,
-            orderId: apiResponse.orderId,
-            vendorQrRefId: apiResponse.vendorQrRefId,
-            qr: apiResponse.qr
+            ...apiResponse,
+            vendorQrRefId: actualRefId
           };
           const mappedPaymentPayload = {amount: apiResponse.amount, orderId: apiResponse.orderId, nonce: showPayload.nonce};
 
@@ -313,8 +326,9 @@ export class MMPaySDK {
     }
     const checkStatus = async () => {
       try {
-        const response = await this.api.pollPayment(payload);
+        const response: any = await this.api.pollPayment(payload);
         const status = (response.status || '').toUpperCase();
+        const actualRefId = response.vendorQrRefId || response.transactionRefId;
 
         if (status === 'SUCCESS' || status === 'FAILED' || status === 'EXPIRED' || status === 'CANCELLED') {
           this._cleanup();
@@ -322,8 +336,8 @@ export class MMPaySDK {
 
           let messageHtml = '';
           if (status === 'SUCCESS') {
-            messageHtml = `<span class="en-text">Payment successful.<br>Ref: ${response.vendorQrRefId || 'N/A'}</span>
-             <span class="mm-text">ငွေပေးချေမှု အောင်မြင်ပါပြီ။<br>ရည်ညွှန်းနံပါတ်: ${response.vendorQrRefId || 'N/A'}</span>`;
+            messageHtml = `<span class="en-text">Payment successful.<br>Ref: ${actualRefId || 'N/A'}</span>
+             <span class="mm-text">ငွေပေးချေမှု အောင်မြင်ပါပြီ။<br>ရည်ညွှန်းနံပါတ်: ${actualRefId || 'N/A'}</span>`;
           } else if (status === 'CANCELLED') {
             messageHtml = `<span class="en-text">Payment cancelled.</span>
              <span class="mm-text">ငွေပေးချေမှုကို ပယ်ဖျက်လိုက်ပါသည်။</span>`;
@@ -341,7 +355,7 @@ export class MMPaySDK {
             expired: status === 'EXPIRED',
             cancelled: status === 'CANCELLED',
             orderId: response.orderId,
-            vendorQrRefId: response.vendorQrRefId
+            vendorQrRefId: actualRefId
           });
         }
       } catch (error) { }

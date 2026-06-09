@@ -25,10 +25,13 @@ export interface ICreatePaymentRequestParams {
     nonce: string;
 }
 export interface ICreatePaymentResponse {
-    amount: number;
     orderId: string;
+    amount: number;
+    status: 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED' | 'CANCELLED' | 'EXPIRED';
+    currency: string;
     vendorQrRefId: string;
     qr: string;
+    createdAt: string;
 }
 export interface IPaymentShowRequestParams {
     orderId: string;
