@@ -1,6 +1,5 @@
 import {MMPayAPI} from './api';
 import {
-  ICreatePaymentRequestParams,
   ICreatePaymentResponse,
   IModalEventResult,
   IPaymentShowRequestParams,
@@ -42,6 +41,7 @@ export class MMPaySDK {
     }
 
     const baseUrl = options.baseUrl || 'https://browser-engine-production.up.railway.app';
+
     this.merchantName = options.merchantName || 'MyanMyanPay';
     this.POLL_INTERVAL_MS = options.pollInterval || 5000;
 
@@ -148,77 +148,6 @@ export class MMPaySDK {
       orderId: payload.orderId,
       vendorQrRefId: actualRefId
     });
-  }
-
-  public async createPayment(params: ICreatePaymentRequestParams): Promise<ICreatePaymentResponse> {
-    const nonce = new Date().getTime().toString() + '_mmp';
-    const tokenResponse = await this.api.createToken({amount: params.amount, orderId: params.orderId, nonce});
-    this.api.setToken(tokenResponse.token);
-
-    const response: any = await this.api.createPayment({...params, nonce});
-    response.vendorQrRefId = response.vendorQrRefId || response.transactionRefId;
-    return response as ICreatePaymentResponse;
-  }
-
-  public async showPaymentModal(params: ICreatePaymentRequestParams, onComplete: (result: IModalEventResult) => void): Promise<void> {
-    this.onCompleteCallback = onComplete;
-
-    const cachedData = localStorage.getItem(this.CACHE_KEY);
-    if (cachedData) {
-      try {
-        const parsed = JSON.parse(cachedData);
-        if (parsed.environment === this.environment && Date.now() < parsed.expireAt) {
-          this.api.setToken(parsed.token);
-          this._resumePaymentState(parsed.apiResponse, parsed.payload, parsed.expireAt);
-          return;
-        } else {
-          this._clearCache();
-        }
-      } catch (e) {
-        this._clearCache();
-      }
-    }
-
-    this.ui.renderPreloadScreen(this._getGlobalHandlers());
-    const expireAt = Date.now() + (this.TIMEOUT_SECONDS * 1000);
-
-    try {
-      const startTime = Date.now();
-      const nonce = new Date().getTime().toString() + '_mmp';
-
-      const tokenResponse = await this.api.createToken({amount: params.amount, orderId: params.orderId, nonce});
-      this.api.setToken(tokenResponse.token);
-
-      const paymentPayload = {...params, nonce};
-      const apiResponse: any = await this.api.createPayment(paymentPayload);
-
-      const elapsed = Date.now() - startTime;
-      if (elapsed < 1500) await new Promise(resolve => setTimeout(resolve, 1500 - elapsed));
-
-      // Robust extraction protects the UI from crashing if keys mismatch
-      const actualRefId = apiResponse?.vendorQrRefId || apiResponse?.transactionRefId;
-
-      if (apiResponse && apiResponse.qr && actualRefId) {
-        apiResponse.vendorQrRefId = actualRefId; // Enforce explicit property map
-
-        localStorage.setItem(this.CACHE_KEY, JSON.stringify({
-          payload: paymentPayload,
-          apiResponse: apiResponse,
-          expireAt: expireAt,
-          token: this.api.getToken(),
-          environment: this.environment
-        }));
-        this._resumePaymentState(apiResponse, paymentPayload, expireAt);
-      } else {
-        throw new Error("Invalid API Response: Missing QR Data or Reference ID.");
-      }
-    } catch (error: any) {
-      this.api.setToken(null);
-      const errMessage = error?.message || 'Error occurred while starting payment.';
-      const terminalMsg = `<span class="en-text">${errMessage}</span><span class="mm-text">ငွေပေးချေမှု စတင်စဉ် အမှားအယွင်း ဖြစ်ပွားသည်။</span>`;
-      this.ui.showTerminalMessage(params.orderId || 'N/A', 'FAILED', terminalMsg, this._getGlobalHandlers(true));
-      this._triggerEvent({failed: true, orderId: params.orderId});
-    }
   }
 
   public async pay(orderId: string, onComplete: (result: IModalEventResult) => void): Promise<void> {

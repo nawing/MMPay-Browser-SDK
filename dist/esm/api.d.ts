@@ -1,4 +1,4 @@
-import { ICancelPaymentRequestParams, ICancelPaymentResponse, ICreatePaymentRequestParams, ICreatePaymentResponse, ICreateTokenRequestParams, ICreateTokenResponse, IPaymentShowRequestParams, IPaymentShowResponse, IPollingRequest, IPollingResponse } from './types';
+import { ICancelPaymentRequestParams, ICancelPaymentResponse, ICreateTokenRequestParams, ICreateTokenResponse, IPaymentShowRequestParams, IPaymentShowResponse, IPollingRequest, IPollingResponse } from './types';
 export declare class MMPayAPI {
     private baseUrl;
     private environment;
@@ -9,7 +9,6 @@ export declare class MMPayAPI {
     getToken(): string | null;
     private call;
     createToken(payload: ICreateTokenRequestParams): Promise<ICreateTokenResponse>;
-    createPayment(payload: ICreatePaymentRequestParams): Promise<ICreatePaymentResponse>;
     showPayment(payload: IPaymentShowRequestParams): Promise<IPaymentShowResponse>;
     cancelPayment(payload: ICancelPaymentRequestParams): Promise<ICancelPaymentResponse>;
     pollPayment(payload: IPollingRequest): Promise<IPollingResponse>;

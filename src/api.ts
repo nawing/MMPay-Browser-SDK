@@ -1,8 +1,6 @@
 import {
   ICancelPaymentRequestParams,
   ICancelPaymentResponse,
-  ICreatePaymentRequestParams,
-  ICreatePaymentResponse,
   ICreateTokenRequestParams,
   ICreateTokenResponse,
   IPaymentShowRequestParams,
@@ -58,11 +56,6 @@ export class MMPayAPI {
   public async createToken(payload: ICreateTokenRequestParams): Promise<ICreateTokenResponse> {
     const endpoint = `/xpayments/${this.environment}-token-request`;
     return this.call<ICreateTokenResponse>(endpoint, payload);
-  }
-
-  public async createPayment(payload: ICreatePaymentRequestParams): Promise<ICreatePaymentResponse> {
-    const endpoint = `/xpayments/${this.environment}-payment-create`;
-    return this.call<ICreatePaymentResponse>(endpoint, payload);
   }
 
   public async showPayment(payload: IPaymentShowRequestParams): Promise<IPaymentShowResponse> {

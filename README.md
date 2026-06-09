@@ -116,98 +116,6 @@ MMPayApp.pay('Order-ID-111111', (result) => {
 })
 ```
 
-
-
-##### Step 4: 🚀 Call Modal Object
-### `showPaymentModal()` (Not Recommended: UI + Polling)
-
-**Do this only for user input amount, like donation acception. Your order id and amount may not match and is prone to payload maipulation attacks**
-
-This is the easiest way to integrate. This method **initiates the transaction**, **renders the UI** (QR code/Redirect link) into your container, and automatically **polls your gateway** for payment completion status, executing a callback when the payment is final.
-
-#### **Method Signature**
-```typescript
-showPaymentModal(paymentData: PaymentData, onComplete: Function): Promise<void>
-```
-
-#### **Example Implementation**
-```javascript
-MMPayApp.showPaymentModal({
-    amount: 50000,
-    orderId: 'ORD-' + new Date().getTime(),
-    customMessage: 'Your custom message here', // Optional
-    callbackUrl: 'https://yoursite.com/confirmation' // Optional [Default callback input in our console will be called if no specified]
-}, (result) => {
-    if (result.success) {
-        console.log('Success: ' + result.orderId + ' : Transaction : ' + result.transactionId);
-    }
-    if (result.created) {
-        console.log('Created: ' + result.orderId);
-    }
-    if (result.cancelled) {
-        console.log('Cancelled: ' + result.orderId);
-    }
-    if (result.expired) {
-        console.log('Expoired: ' + result.orderId);
-    }
-});
-```
-
-##### Step 4: 🚀 Putting All Together
-
-```html
-<script src="https://cdn.jsdelivr.net/npm/mmpay-browser-sdk@latest/dist/mmpay-sdk.js"></script>
-```
-
-```javascript
-const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
-    baseUrl:  'https://xxx.myanmyanpay.com', // Sign up with us and ask our team
-    merchantName:  'Your Shop Name',
-    design: {
-        mode: 'light', // dark | dark-translucent | light | light-translucent
-        color: '#0000000' // #color code
-    }
-});
-
-MMPayApp.pay('Order-ID-111111', (result) => { // This Order Must Be Created WIth Our Sdks or Backend Api
-    if (result.success) {
-        console.log('Success: ' + result.orderId + ' : Transaction : ' + result.transactionId);
-    }
-    if (result.created) {
-        console.log('Created: ' + result.orderId);
-    }
-    if (result.cancelled) {
-        console.log('Cancelled: ' + result.orderId);
-    }
-    if (result.expired) {
-        console.log('Expoired: ' + result.orderId);
-    }
-});
-
-
-
-// Use this only for donation and other usecases where order id and amount is not strict and user input
-MMPayApp.showPaymentModal({
-    amount: 50000,
-    orderId: 'ORD-' + new Date().getTime(),
-    customMessage: 'Your custom message here', // Optional
-    callbackUrl: 'https://yoursite.com/confirmation' // Optional [Default callback input in our console will be called if no specified]
-}, (result) => {
-    if (result.success) {
-        console.log('Success: ' + result.orderId + ' : Transaction : ' + result.transactionId);
-    }
-    if (result.created) {
-        console.log('Created: ' + result.orderId);
-    }
-    if (result.cancelled) {
-        console.log('Cancelled: ' + result.orderId);
-    }
-    if (result.expired) {
-        console.log('Expoired: ' + result.orderId);
-    }
-});
-```
-
 ---
 
 
@@ -352,7 +260,7 @@ export const Checkout = () => {
     const { pay } = useMMPay();
 
     const handlePayment = () => {
-        pay(5000, `ORD-${Date.now()}`);
+        pay(`ORD-${Date.now()}`);
     };
 
     return (
@@ -423,7 +331,7 @@ const pay = ( orderId: string ) => {
 };
 
 const handlePayment = () => {
-    pay(5000, `ORD-${Date.now()}`);
+    pay(`ORD-${Date.now()}`);
 };
 </script>
 

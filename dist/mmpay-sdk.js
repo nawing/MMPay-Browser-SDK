@@ -138,15 +138,6 @@
                 });
             });
         };
-        MMPayAPI.prototype.createPayment = function (payload) {
-            return __awaiter(this, void 0, void 0, function () {
-                var endpoint;
-                return __generator(this, function (_a) {
-                    endpoint = "/xpayments/".concat(this.environment, "-payment-create");
-                    return [2 /*return*/, this.call(endpoint, payload)];
-                });
-            });
-        };
         MMPayAPI.prototype.showPayment = function (payload) {
             return __awaiter(this, void 0, void 0, function () {
                 var endpoint;
@@ -537,104 +528,9 @@
                 vendorQrRefId: actualRefId
             });
         };
-        MMPaySDK.prototype.createPayment = function (params) {
-            return __awaiter(this, void 0, void 0, function () {
-                var nonce, tokenResponse, response;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0:
-                            nonce = new Date().getTime().toString() + '_mmp';
-                            return [4 /*yield*/, this.api.createToken({ amount: params.amount, orderId: params.orderId, nonce: nonce })];
-                        case 1:
-                            tokenResponse = _a.sent();
-                            this.api.setToken(tokenResponse.token);
-                            return [4 /*yield*/, this.api.createPayment(__assign(__assign({}, params), { nonce: nonce }))];
-                        case 2:
-                            response = _a.sent();
-                            response.vendorQrRefId = response.vendorQrRefId || response.transactionRefId;
-                            return [2 /*return*/, response];
-                    }
-                });
-            });
-        };
-        MMPaySDK.prototype.showPaymentModal = function (params, onComplete) {
-            return __awaiter(this, void 0, void 0, function () {
-                var cachedData, parsed, expireAt, startTime, nonce, tokenResponse, paymentPayload, apiResponse, elapsed_1, actualRefId, error_1, errMessage, terminalMsg;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0:
-                            this.onCompleteCallback = onComplete;
-                            cachedData = localStorage.getItem(this.CACHE_KEY);
-                            if (cachedData) {
-                                try {
-                                    parsed = JSON.parse(cachedData);
-                                    if (parsed.environment === this.environment && Date.now() < parsed.expireAt) {
-                                        this.api.setToken(parsed.token);
-                                        this._resumePaymentState(parsed.apiResponse, parsed.payload, parsed.expireAt);
-                                        return [2 /*return*/];
-                                    }
-                                    else {
-                                        this._clearCache();
-                                    }
-                                }
-                                catch (e) {
-                                    this._clearCache();
-                                }
-                            }
-                            this.ui.renderPreloadScreen(this._getGlobalHandlers());
-                            expireAt = Date.now() + (this.TIMEOUT_SECONDS * 1000);
-                            _a.label = 1;
-                        case 1:
-                            _a.trys.push([1, 6, , 7]);
-                            startTime = Date.now();
-                            nonce = new Date().getTime().toString() + '_mmp';
-                            return [4 /*yield*/, this.api.createToken({ amount: params.amount, orderId: params.orderId, nonce: nonce })];
-                        case 2:
-                            tokenResponse = _a.sent();
-                            this.api.setToken(tokenResponse.token);
-                            paymentPayload = __assign(__assign({}, params), { nonce: nonce });
-                            return [4 /*yield*/, this.api.createPayment(paymentPayload)];
-                        case 3:
-                            apiResponse = _a.sent();
-                            elapsed_1 = Date.now() - startTime;
-                            if (!(elapsed_1 < 1500)) return [3 /*break*/, 5];
-                            return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 1500 - elapsed_1); })];
-                        case 4:
-                            _a.sent();
-                            _a.label = 5;
-                        case 5:
-                            actualRefId = (apiResponse === null || apiResponse === void 0 ? void 0 : apiResponse.vendorQrRefId) || (apiResponse === null || apiResponse === void 0 ? void 0 : apiResponse.transactionRefId);
-                            if (apiResponse && apiResponse.qr && actualRefId) {
-                                apiResponse.vendorQrRefId = actualRefId; // Enforce explicit property map
-                                localStorage.setItem(this.CACHE_KEY, JSON.stringify({
-                                    payload: paymentPayload,
-                                    apiResponse: apiResponse,
-                                    expireAt: expireAt,
-                                    token: this.api.getToken(),
-                                    environment: this.environment
-                                }));
-                                this._resumePaymentState(apiResponse, paymentPayload, expireAt);
-                            }
-                            else {
-                                throw new Error("Invalid API Response: Missing QR Data or Reference ID.");
-                            }
-                            return [3 /*break*/, 7];
-                        case 6:
-                            error_1 = _a.sent();
-                            this.api.setToken(null);
-                            errMessage = (error_1 === null || error_1 === void 0 ? void 0 : error_1.message) || 'Error occurred while starting payment.';
-                            terminalMsg = "<span class=\"en-text\">".concat(errMessage, "</span><span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F \u1005\u1010\u1004\u103A\u1005\u1009\u103A \u1021\u1019\u103E\u102C\u1038\u1021\u101A\u103D\u1004\u103A\u1038 \u1016\u103C\u1005\u103A\u1015\u103D\u102C\u1038\u101E\u100A\u103A\u104B</span>");
-                            this.ui.showTerminalMessage(params.orderId || 'N/A', 'FAILED', terminalMsg, this._getGlobalHandlers(true));
-                            this._triggerEvent({ failed: true, orderId: params.orderId });
-                            return [3 /*break*/, 7];
-                        case 7: return [2 /*return*/];
-                    }
-                });
-            });
-        };
         MMPaySDK.prototype.pay = function (orderId, onComplete) {
             return __awaiter(this, void 0, void 0, function () {
-                var cachedData, parsed, showPayload, expireAt, startTime, tokenNonce, tokenResponse, apiResponse, elapsed_2, status_1, actualRefId, terminalStatus, terminalMsg, mappedPaymentResponse, mappedPaymentPayload, error_2, errMessage, terminalMsg;
+                var cachedData, parsed, showPayload, expireAt, startTime, tokenNonce, tokenResponse, apiResponse, elapsed_1, status_1, actualRefId, terminalStatus, terminalMsg, mappedPaymentResponse, mappedPaymentPayload, error_1, errMessage, terminalMsg;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
@@ -671,9 +567,9 @@
                             return [4 /*yield*/, this.api.showPayment(showPayload)];
                         case 3:
                             apiResponse = _a.sent();
-                            elapsed_2 = Date.now() - startTime;
-                            if (!(elapsed_2 < 1500)) return [3 /*break*/, 5];
-                            return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 1500 - elapsed_2); })];
+                            elapsed_1 = Date.now() - startTime;
+                            if (!(elapsed_1 < 1500)) return [3 /*break*/, 5];
+                            return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 1500 - elapsed_1); })];
                         case 4:
                             _a.sent();
                             _a.label = 5;
@@ -727,9 +623,9 @@
                             }
                             throw new Error("Invalid API Response: Missing QR Data or Reference ID.");
                         case 6:
-                            error_2 = _a.sent();
+                            error_1 = _a.sent();
                             this.api.setToken(null);
-                            errMessage = (error_2 === null || error_2 === void 0 ? void 0 : error_2.message) || 'Error occurred while loading payment.';
+                            errMessage = (error_1 === null || error_1 === void 0 ? void 0 : error_1.message) || 'Error occurred while loading payment.';
                             terminalMsg = "<span class=\"en-text\">".concat(errMessage, "</span><span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F \u1005\u1010\u1004\u103A\u1005\u1009\u103A \u1021\u1019\u103E\u102C\u1038\u1021\u101A\u103D\u1004\u103A\u1038 \u1016\u103C\u1005\u103A\u1015\u103D\u102C\u1038\u101E\u100A\u103A\u104B</span>");
                             this.ui.showTerminalMessage(orderId || 'N/A', 'FAILED', terminalMsg, this._getGlobalHandlers(true));
                             this._triggerEvent({ failed: true, orderId: orderId });
