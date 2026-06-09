@@ -76,10 +76,11 @@ npm install mmpay-node-sdk --save
 
 #### **Backend Integration**
 ```typescript
-// Express
+// Express JS Server
+// Never expose your secret key
 import { MMPaySDK } from 'mmpay-node-sdk';
 
-const MMPay = new MMPaySdk({
+const MMPay = new MMPaySDK({
   appId: "MMxxxxxxx",
   publishableKey: "pk_live_abcxxxxx",
   secretKey: "sk_live_abcxxxxx",
