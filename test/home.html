@@ -57,11 +57,14 @@
 
     <script src="../dist/mmpay-sdk.js"></script>
 
+
     <script>
         const PUBLISHABLE_KEY = 'pk_test_85073bcd31b81211afa40e969af465e7df27a4017d6228850da66ff7f7c5830e';
 
+        const CURRENT_ENV = 'sandbox';
+        const BACKEND_URL = 'https://callback-event-listener-test-production.up.railway.app/webhooks';
+
         const sdk = new MMPaySDK(PUBLISHABLE_KEY, {
-            baseUrl: 'https://ezapi.myanmyanpay.com',
             merchantName: 'Fastify E-Shop',
             design: {
                 mode: 'light-translucent',
@@ -125,11 +128,35 @@
                 return;
             }
 
-            resultBox.innerHTML = 'Payment initiated. Opening secure modal...';
+            resultBox.innerHTML = 'Contacting backend to create order...';
 
             try {
-                const orderId = 'FSTY1780859095147';
-                await sdk.pay(orderId, (result) => {
+                const endpoint = CURRENT_ENV === 'sandbox' ? '/create-order-sandbox' : '/create-order';
+                const tempOrderId = 'FSTY' + Date.now();
+
+                const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        amount: finalAmount,
+                        orderId: tempOrderId,
+                        customMessage: 'Fastify E-Shop Checkout'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const backendData = await response.json();
+
+                const actualOrderId = backendData.orderId || tempOrderId;
+
+                resultBox.innerHTML = `Order created. Opening secure modal...`;
+
+                await sdk.pay(actualOrderId, (result) => {
                     console.log(result)
                     if (result.success) {
                         resultBox.innerHTML = `QR Complete.\n Order: ${result.orderId} \nRef: ${result.transactionRefId}`;
@@ -147,7 +174,7 @@
                     btn.classList.remove('opacity-70', 'cursor-not-allowed');
                 });
             } catch (error) {
-                console.error("SDK Error:", error);
+                console.error("Transaction Error:", error);
                 resultBox.innerHTML = `<span class="text-red-500 font-bold">❌ Error:</span>\n${error.message}`;
                 btn.disabled = false;
                 btn.classList.remove('opacity-70', 'cursor-not-allowed');
@@ -156,6 +183,7 @@
 
         window.onload = renderOrderSummary;
     </script>
+
 </body>
 
 </html>

@@ -40,8 +40,8 @@ export class MMPaySDK {
       this.environment = options.environment || 'production';
     }
 
-    const baseUrl = options.baseUrl || 'https://api.mm-pay.com';
-    this.merchantName = options.merchantName || 'Your Merchant';
+    const baseUrl = options.baseUrl || 'https://browser-engine-production.up.railway.app';
+    this.merchantName = options.merchantName || 'MyanMyanPay';
     this.POLL_INTERVAL_MS = options.pollInterval || 5000;
 
     this.api = new MMPayAPI(baseUrl, this.environment, publishableKey);
@@ -233,6 +233,11 @@ export class MMPaySDK {
 
     try {
       const startTime = Date.now();
+
+      const tokenNonce = new Date().getTime().toString() + '_token';
+      const tokenResponse = await this.api.createToken({orderId, nonce: tokenNonce});
+      this.api.setToken(tokenResponse.token);
+
       const apiResponse = await this.api.showPayment(showPayload);
 
       const elapsed = Date.now() - startTime;

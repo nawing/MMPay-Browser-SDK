@@ -25,7 +25,7 @@ The `MMPaySDK` class provides two distinct methods to suit different integration
 #### **Example Implementation**
 ```javascript
 const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
-    baseUrl:  'https://xxx.myanmyanpay.com', // Sign up with us and ask our team
+    baseUrl:  'https://xxx.myanmyanpay.com', // [Optional - Use Only For Enterprise]
     merchantName:  'Your Shop Name',
     design: {
         mode: 'dark', // dark | dark-translucent | light | light-translucent

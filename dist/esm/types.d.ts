@@ -10,7 +10,7 @@ export interface SDKOptions {
     design?: IDesignOptions;
 }
 export interface ICreateTokenRequestParams {
-    amount: number;
+    amount?: number;
     orderId: string;
     nonce: string;
 }
@@ -37,7 +37,7 @@ export interface IPaymentShowRequestParams {
 export interface IPaymentShowResponse {
     orderId: string;
     amount: number;
-    status: string;
+    status: 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED' | 'CANCELLED' | 'EXPIRED';
     currency: string;
     transactionRefId: string;
     qr: string;
