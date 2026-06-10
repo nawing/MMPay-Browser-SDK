@@ -8,16 +8,13 @@ Developed using **TypeScript**, the SDK offers a clean, type-safe interface and 
 
 ### 1. Code Implementation
 
-
 ##### Step 1: 🛠️  Plugin or SDK Installation
 The MyanMyanPay SDK is distributed as a single JavaScript file, ready for direct inclusion.
-
 Embed the following `<script>` tag into the `<head>` or before the closing `</body>` tag of your checkout page.
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/mmpay-browser-sdk@latest/dist/mmpay-sdk.js"></script>
 ```
-
 
 ##### Step 2: 🚀 Initialize Your App
 The `MMPaySDK` class provides two distinct methods to suit different integration needs.
@@ -33,18 +30,96 @@ const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
 });
 ```
 
-##### Step 3: 🚀 Call Modal Object
+##### Step 3: 🚀 Call Pay Funtion
 ### `pay()` (Recommended: UI + Polling)
+This function is a simple way where an MMQR Reference No and QR to be created at backend with secret key securely, and putting the order ID in our plugin to make POP UP appear in your browser.
 
 #### **Method Signature**
 ```typescript
 pay(orderId: string, onComplete: Function ): Promise<void>
 ```
 
-#### **Example Implementation**
-```javascript
-MMPayApp.pay('Order-ID-111111', (result) => console.log(result));
+### [Establishing Source of Truth] via Backend
+Do this at your backend server, it is important to create a source of truth in this manner.
+
+```bash
+npm install mmpay-node-sdk --save
 ```
+
+#### **Backend Integration**
+```typescript
+import { MMPaySDK } from 'mmpay-node-sdk';
+
+const MMPay = new MMPaySDK({
+  appId: "MMxxxxxxx",
+  publishableKey: "pk_live_abcxxxxx",
+  secretKey: "sk_live_abcxxxxx",
+  apiBaseUrl: "https://xxxxxx"
+})
+
+const { qr } = await MMPay.pay({ amount, orderId });
+```
+
+#### **Browser Plugin Implementation**
+```javascript
+const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
+    merchantName:  'Your Shop Name',
+    design: {
+        mode: 'dark', // dark | dark-translucent | light | light-translucent
+        color: '#DE3163' // #color code
+    }
+});
+MMPayApp.pay('Order-ID-111111', (result) => console.log(result))
+```
+
+---
+
+##### Step 3: 🚀 Show Payment Modal
+### `showPaymentModal()` (Recommended: UI + Polling)
+This function is a simple way where an MMQR Reference No and QR to be created on the browser site, but you must verify the source of truth in our webhooks to avoid payload manipulation.
+
+#### **Browser Plugin Implementation**
+```javascript
+const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
+    merchantName:  'Your Shop Name',
+    design: {
+        mode: 'dark', // dark | dark-translucent | light | light-translucent
+        color: '#DE3163' // #color code
+    }
+});
+MMPayApp.showPaymentModal({
+    orderId: 'Order-ID-111111',
+    amount: 2800
+}, (result) => {
+    if (result.success) {
+        console.log('Success: ' + result.orderId + ' : Transaction : ' + result.transactionId);
+    }
+})
+```
+
+#### **Verifying Source of Truth**
+Do this at your backend to verify source of truth. If there are any payload manipulation that does not match your amount, the order can be 'CANCELLED' instanly via our api.
+
+```typescript
+import { MMPaySDK } from 'mmpay-node-sdk';
+
+const MMPay = new MMPaySDK({
+  appId: "MMxxxxxxx",
+  publishableKey: "pk_live_abcxxxxx",
+  secretKey: "sk_live_abcxxxxx",
+  apiBaseUrl: "https://xxxxxx"
+})
+
+MMPay
+  .onTxCreate((tx: MMPayIncomingCallbackScheme) => {
+    const { amount } = await DB.getOrderId(tx.orderId) // get your source of truth from your database
+    if (tx.amount !== amount ) {
+      await MMPay.cancel(tx.orderId) // cancel order
+    }
+  })
+```
+
+---
 
 #### **All Support Events**
 
@@ -64,60 +139,7 @@ MMPayApp.pay('Order-ID-111111', (result) => {
     }
 })
 ```
-
-##### Step 4: 🚀 Creating The Order ID & Paymennt Ref
-### `MMPay.pay()` [Establishing Source of Truth Secretly]
-
-Do this at your backend server, it is important to create a source of truth in this manner to avoid payload manipulation
-
-```bash
-npm install mmpay-node-sdk --save
-```
-
-#### **Backend Integration**
-```typescript
-// Express JS Server
-// Never expose your secret key
-import { MMPaySDK } from 'mmpay-node-sdk';
-
-const MMPay = new MMPaySDK({
-  appId: "MMxxxxxxx",
-  publishableKey: "pk_live_abcxxxxx",
-  secretKey: "sk_live_abcxxxxx",
-  apiBaseUrl: "https://xxxxxx"
-})
-
-app.post('/create-order', async (req: Request, res: Response) => {
-    const { amount, orderId } = req.body;
-    const { qr, transactionRefId } = await MMPay.pay({ amount, orderId });
-    res.json({ qr, orderId, amount, transactionRefId })
-});
-```
-
-#### **Frontend Integration**
-```html
-<script src="https://cdn.jsdelivr.net/npm/mmpay-browser-sdk@latest/dist/mmpay-sdk.js"></script>
-```
-
-#### **Example Implementation**
-```javascript
-const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
-    merchantName:  'Your Shop Name',
-    design: {
-        mode: 'dark', // dark | dark-translucent | light | light-translucent
-        color: '#DE3163' // #color code
-    }
-});
-
-MMPayApp.pay('Order-ID-111111', (result) => {
-    if (result.success) {
-        // Redirdect to Success Page or do SUCCESS thing
-    }
-})
-```
-
 ---
-
 
 ### 2. Error Codes
 

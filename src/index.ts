@@ -9,23 +9,23 @@ import {
 import {MMPayUI} from './ui';
 
 export class MMPaySDK {
-  private POLL_INTERVAL_MS: number;
-  private readonly TIMEOUT_SECONDS: number = 300;
-  private readonly CACHE_KEY: string = 'mmpay_pending_tx';
+  protected POLL_INTERVAL_MS: number;
+  protected readonly TIMEOUT_SECONDS: number = 300;
+  protected readonly CACHE_KEY: string = 'mmpay_pending_tx';
 
-  private environment: 'sandbox' | 'production';
-  private merchantName: string;
-  private onCompleteCallback: ((result: IModalEventResult) => void) | null = null;
+  protected environment: 'sandbox' | 'production';
+  protected merchantName: string;
+  protected onCompleteCallback: ((result: IModalEventResult) => void) | null = null;
 
-  private pollIntervalId: number | undefined = undefined;
-  private countdownIntervalId: number | undefined = undefined;
+  protected pollIntervalId: number | undefined = undefined;
+  protected countdownIntervalId: number | undefined = undefined;
 
-  private pendingApiResponse: any | null = null;
-  private pendingPaymentPayload: any | null = null;
+  protected pendingApiResponse: any | null = null;
+  protected pendingPaymentPayload: any | null = null;
 
   // Clean Internal Dependencies
-  private api: MMPayAPI;
-  private ui: MMPayUI;
+  protected api: MMPayAPI;
+  protected ui: MMPayUI;
 
   constructor(publishableKey: string, options: SDKOptions = {}) {
     if (!publishableKey) {
@@ -57,98 +57,6 @@ export class MMPaySDK {
     }
   }
 
-  private _getGlobalHandlers(isTerminal: boolean = false) {
-    return {
-      MMPayToggleLang: (lang: string) => {
-        const modal = document.getElementById('mmpay-full-modal');
-        if (modal) modal.className = 'mmpay-lang-' + lang;
-      },
-      MMPayReRenderModal: () => this.ui.reRenderPendingModalInstance(),
-      MMPayCloseModal: async (forceClose = false) => {
-        if (isTerminal || forceClose) {
-          if (forceClose && !isTerminal && this.pendingPaymentPayload) {
-            try {
-              await this.api.cancelPayment({
-                orderId: this.pendingPaymentPayload.orderId,
-                nonce: new Date().getTime().toString() + '_cancel'
-              });
-              this._triggerEvent({
-                cancelled: true,
-                orderId: this.pendingPaymentPayload.orderId
-              });
-            } catch (e) { }
-            this._clearCache();
-          }
-          if (isTerminal) {
-            this._clearCache();
-          }
-          this._cleanup();
-        } else {
-          this.ui.showCancelConfirmationModal();
-        }
-      }
-    };
-  }
-
-  private _triggerEvent(eventData: IModalEventResult): void {
-    if (this.onCompleteCallback) {
-      try {
-        this.onCompleteCallback(eventData);
-      } catch (e) { }
-    }
-  }
-
-  private _cleanup(): void {
-    if (this.pollIntervalId !== undefined) {
-      window.clearInterval(this.pollIntervalId);
-      this.pollIntervalId = undefined;
-    }
-    if (this.countdownIntervalId !== undefined) {
-      window.clearInterval(this.countdownIntervalId);
-      this.countdownIntervalId = undefined;
-    }
-    this.ui.cleanupModal(true);
-  }
-
-  private _clearCache(): void {
-    localStorage.removeItem(this.CACHE_KEY);
-  }
-
-  private _checkAndAutoResume(): void {
-    const cachedData = localStorage.getItem(this.CACHE_KEY);
-    if (!cachedData) return;
-
-    try {
-      const parsed = JSON.parse(cachedData);
-      if (parsed.environment !== this.environment || Date.now() >= parsed.expireAt) {
-        this._clearCache();
-        return;
-      }
-      this.api.setToken(parsed.token);
-      this._resumePaymentState(parsed.apiResponse, parsed.payload, parsed.expireAt);
-    } catch (e) {
-      this._clearCache();
-    }
-  }
-
-  private _resumePaymentState(apiResponse: any, payload: any, expireAt: number): void {
-    this.pendingPaymentPayload = payload;
-    this.pendingApiResponse = apiResponse;
-
-    // Strict Fallback Normalization
-    const actualRefId = apiResponse.vendorQrRefId || apiResponse.transactionRefId;
-    apiResponse.vendorQrRefId = actualRefId;
-
-    this.ui.renderQrModalContent(apiResponse, payload.orderId, this.merchantName, this._getGlobalHandlers());
-    this._startPolling(payload);
-    this._startCountdown(payload.orderId, expireAt);
-
-    this._triggerEvent({
-      created: true,
-      orderId: payload.orderId,
-      vendorQrRefId: actualRefId
-    });
-  }
 
   public async pay(orderId: string, onComplete: (result: IModalEventResult) => void): Promise<void> {
     this.onCompleteCallback = onComplete;
@@ -249,7 +157,101 @@ export class MMPaySDK {
     }
   }
 
-  private async _startPolling(payload: IPollingRequest): Promise<void> {
+
+  protected _getGlobalHandlers(isTerminal: boolean = false) {
+    return {
+      MMPayToggleLang: (lang: string) => {
+        const modal = document.getElementById('mmpay-full-modal');
+        if (modal) modal.className = 'mmpay-lang-' + lang;
+      },
+      MMPayReRenderModal: () => this.ui.reRenderPendingModalInstance(),
+      MMPayCloseModal: async (forceClose = false) => {
+        if (isTerminal || forceClose) {
+          if (forceClose && !isTerminal && this.pendingPaymentPayload) {
+            try {
+              await this.api.cancelPayment({
+                orderId: this.pendingPaymentPayload.orderId,
+                nonce: new Date().getTime().toString() + '_cancel'
+              });
+              this._triggerEvent({
+                cancelled: true,
+                orderId: this.pendingPaymentPayload.orderId
+              });
+            } catch (e) { }
+            this._clearCache();
+          }
+          if (isTerminal) {
+            this._clearCache();
+          }
+          this._cleanup();
+        } else {
+          this.ui.showCancelConfirmationModal();
+        }
+      }
+    };
+  }
+
+  protected _triggerEvent(eventData: IModalEventResult): void {
+    if (this.onCompleteCallback) {
+      try {
+        this.onCompleteCallback(eventData);
+      } catch (e) { }
+    }
+  }
+
+  protected _cleanup(): void {
+    if (this.pollIntervalId !== undefined) {
+      window.clearInterval(this.pollIntervalId);
+      this.pollIntervalId = undefined;
+    }
+    if (this.countdownIntervalId !== undefined) {
+      window.clearInterval(this.countdownIntervalId);
+      this.countdownIntervalId = undefined;
+    }
+    this.ui.cleanupModal(true);
+  }
+
+  protected _clearCache(): void {
+    localStorage.removeItem(this.CACHE_KEY);
+  }
+
+  private _checkAndAutoResume(): void {
+    const cachedData = localStorage.getItem(this.CACHE_KEY);
+    if (!cachedData) return;
+
+    try {
+      const parsed = JSON.parse(cachedData);
+      if (parsed.environment !== this.environment || Date.now() >= parsed.expireAt) {
+        this._clearCache();
+        return;
+      }
+      this.api.setToken(parsed.token);
+      this._resumePaymentState(parsed.apiResponse, parsed.payload, parsed.expireAt);
+    } catch (e) {
+      this._clearCache();
+    }
+  }
+
+  private _resumePaymentState(apiResponse: any, payload: any, expireAt: number): void {
+    this.pendingPaymentPayload = payload;
+    this.pendingApiResponse = apiResponse;
+
+    // Strict Fallback Normalization
+    const actualRefId = apiResponse.vendorQrRefId || apiResponse.transactionRefId;
+    apiResponse.vendorQrRefId = actualRefId;
+
+    this.ui.renderQrModalContent(apiResponse, payload.orderId, this.merchantName, this._getGlobalHandlers());
+    this._startPolling(payload);
+    this._startCountdown(payload.orderId, expireAt);
+
+    this._triggerEvent({
+      created: true,
+      orderId: payload.orderId,
+      vendorQrRefId: actualRefId
+    });
+  }
+
+  protected async _startPolling(payload: IPollingRequest): Promise<void> {
     if (this.pollIntervalId !== undefined) {
       window.clearInterval(this.pollIntervalId);
     }
@@ -293,7 +295,7 @@ export class MMPaySDK {
     this.pollIntervalId = window.setInterval(checkStatus, this.POLL_INTERVAL_MS);
   }
 
-  private _startCountdown(orderId: string, expireAt: number): void {
+  protected _startCountdown(orderId: string, expireAt: number): void {
     if (this.countdownIntervalId !== undefined) {
       window.clearInterval(this.countdownIntervalId);
     }

@@ -412,6 +412,113 @@ var MMPaySDK = /** @class */ (function () {
             this._checkAndAutoResume();
         }
     }
+    MMPaySDK.prototype.pay = function (orderId, onComplete) {
+        return __awaiter(this, void 0, void 0, function () {
+            var cachedData, parsed, showPayload, expireAt, startTime, tokenNonce, tokenResponse, apiResponse, elapsed_1, status_1, actualRefId, terminalStatus, terminalMsg, mappedPaymentResponse, mappedPaymentPayload, error_1, errMessage, terminalMsg;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        this.onCompleteCallback = onComplete;
+                        cachedData = localStorage.getItem(this.CACHE_KEY);
+                        if (cachedData) {
+                            try {
+                                parsed = JSON.parse(cachedData);
+                                if (parsed.environment === this.environment && Date.now() < parsed.expireAt && parsed.payload.orderId === orderId) {
+                                    this.api.setToken(parsed.token);
+                                    this._resumePaymentState(parsed.apiResponse, parsed.payload, parsed.expireAt);
+                                    return [2 /*return*/];
+                                }
+                                else {
+                                    this._clearCache();
+                                }
+                            }
+                            catch (e) {
+                                this._clearCache();
+                            }
+                        }
+                        this.ui.renderPreloadScreen(this._getGlobalHandlers());
+                        showPayload = { orderId: orderId, nonce: new Date().getTime().toString() + '_show' };
+                        expireAt = Date.now() + (this.TIMEOUT_SECONDS * 1000);
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 6, , 7]);
+                        startTime = Date.now();
+                        tokenNonce = new Date().getTime().toString() + '_token';
+                        return [4 /*yield*/, this.api.createToken({ orderId: orderId, nonce: tokenNonce })];
+                    case 2:
+                        tokenResponse = _a.sent();
+                        this.api.setToken(tokenResponse.token);
+                        return [4 /*yield*/, this.api.showPayment(showPayload)];
+                    case 3:
+                        apiResponse = _a.sent();
+                        elapsed_1 = Date.now() - startTime;
+                        if (!(elapsed_1 < 1500)) return [3 /*break*/, 5];
+                        return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 1500 - elapsed_1); })];
+                    case 4:
+                        _a.sent();
+                        _a.label = 5;
+                    case 5:
+                        if (apiResponse) {
+                            status_1 = (apiResponse.status || '').toUpperCase();
+                            actualRefId = apiResponse.vendorQrRefId || apiResponse.transactionRefId;
+                            if (status_1 !== 'PENDING') {
+                                this._clearCache();
+                                terminalStatus = 'FAILED';
+                                terminalMsg = '';
+                                if (status_1 === 'SUCCESS') {
+                                    terminalStatus = 'SUCCESS';
+                                    terminalMsg = "<span class=\"en-text\">Payment successful.<br>Ref: ".concat(actualRefId || 'N/A', "</span><span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F \u1021\u1031\u102C\u1004\u103A\u1019\u103C\u1004\u103A\u1015\u102B\u1015\u103C\u102E\u104B<br>\u101B\u100A\u103A\u100A\u103D\u103E\u1014\u103A\u1038\u1014\u1036\u1015\u102B\u1010\u103A: ").concat(actualRefId || 'N/A', "</span>");
+                                }
+                                else if (status_1 === 'CANCELLED') {
+                                    terminalStatus = 'CANCELLED';
+                                    terminalMsg = "<span class=\"en-text\">Payment cancelled.</span><span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F\u1000\u102D\u102F \u1015\u101A\u103A\u1016\u103B\u1000\u103A\u101C\u102D\u102F\u1000\u103A\u1015\u102B\u101E\u100A\u103A\u104B</span>";
+                                }
+                                else if (status_1 === 'EXPIRED') {
+                                    terminalStatus = 'EXPIRED';
+                                    terminalMsg = "<span class=\"en-text\">Payment expired.</span><span class=\"mm-text\">\u101E\u1000\u103A\u1010\u1019\u103A\u1038\u1000\u102F\u1014\u103A\u101E\u103D\u102C\u1038\u1015\u102B\u1015\u103C\u102E\u104B</span>";
+                                }
+                                else {
+                                    terminalMsg = "<span class=\"en-text\">Payment failed.</span><span class=\"mm-text\">\u1019\u1021\u1031\u102C\u1004\u103A\u1019\u103C\u1004\u103A\u1015\u102B\u104B</span>";
+                                }
+                                this.ui.showTerminalMessage(apiResponse.orderId || orderId, terminalStatus, terminalMsg, this._getGlobalHandlers(true));
+                                this._triggerEvent({
+                                    success: status_1 === 'SUCCESS',
+                                    failed: status_1 === 'FAILED',
+                                    expired: status_1 === 'EXPIRED',
+                                    cancelled: status_1 === 'CANCELLED',
+                                    orderId: apiResponse.orderId || orderId,
+                                    vendorQrRefId: actualRefId
+                                });
+                                return [2 /*return*/];
+                            }
+                            if (apiResponse.qr && actualRefId) {
+                                mappedPaymentResponse = __assign(__assign({}, apiResponse), { vendorQrRefId: actualRefId });
+                                mappedPaymentPayload = { amount: apiResponse.amount, orderId: apiResponse.orderId, nonce: showPayload.nonce };
+                                localStorage.setItem(this.CACHE_KEY, JSON.stringify({
+                                    payload: mappedPaymentPayload,
+                                    apiResponse: mappedPaymentResponse,
+                                    expireAt: expireAt,
+                                    token: this.api.getToken(),
+                                    environment: this.environment
+                                }));
+                                this._resumePaymentState(mappedPaymentResponse, mappedPaymentPayload, expireAt);
+                                return [2 /*return*/];
+                            }
+                        }
+                        throw new Error("Invalid API Response: Missing QR Data or Reference ID.");
+                    case 6:
+                        error_1 = _a.sent();
+                        this.api.setToken(null);
+                        errMessage = (error_1 === null || error_1 === void 0 ? void 0 : error_1.message) || 'Error occurred while loading payment.';
+                        terminalMsg = "<span class=\"en-text\">".concat(errMessage, "</span><span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F \u1005\u1010\u1004\u103A\u1005\u1009\u103A \u1021\u1019\u103E\u102C\u1038\u1021\u101A\u103D\u1004\u103A\u1038 \u1016\u103C\u1005\u103A\u1015\u103D\u102C\u1038\u101E\u100A\u103A\u104B</span>");
+                        this.ui.showTerminalMessage(orderId || 'N/A', 'FAILED', terminalMsg, this._getGlobalHandlers(true));
+                        this._triggerEvent({ failed: true, orderId: orderId });
+                        return [3 /*break*/, 7];
+                    case 7: return [2 /*return*/];
+                }
+            });
+        });
+    };
     MMPaySDK.prototype._getGlobalHandlers = function (isTerminal) {
         var _this = this;
         if (isTerminal === void 0) { isTerminal = false; }
@@ -522,113 +629,6 @@ var MMPaySDK = /** @class */ (function () {
             created: true,
             orderId: payload.orderId,
             vendorQrRefId: actualRefId
-        });
-    };
-    MMPaySDK.prototype.pay = function (orderId, onComplete) {
-        return __awaiter(this, void 0, void 0, function () {
-            var cachedData, parsed, showPayload, expireAt, startTime, tokenNonce, tokenResponse, apiResponse, elapsed_1, status_1, actualRefId, terminalStatus, terminalMsg, mappedPaymentResponse, mappedPaymentPayload, error_1, errMessage, terminalMsg;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        this.onCompleteCallback = onComplete;
-                        cachedData = localStorage.getItem(this.CACHE_KEY);
-                        if (cachedData) {
-                            try {
-                                parsed = JSON.parse(cachedData);
-                                if (parsed.environment === this.environment && Date.now() < parsed.expireAt && parsed.payload.orderId === orderId) {
-                                    this.api.setToken(parsed.token);
-                                    this._resumePaymentState(parsed.apiResponse, parsed.payload, parsed.expireAt);
-                                    return [2 /*return*/];
-                                }
-                                else {
-                                    this._clearCache();
-                                }
-                            }
-                            catch (e) {
-                                this._clearCache();
-                            }
-                        }
-                        this.ui.renderPreloadScreen(this._getGlobalHandlers());
-                        showPayload = { orderId: orderId, nonce: new Date().getTime().toString() + '_show' };
-                        expireAt = Date.now() + (this.TIMEOUT_SECONDS * 1000);
-                        _a.label = 1;
-                    case 1:
-                        _a.trys.push([1, 6, , 7]);
-                        startTime = Date.now();
-                        tokenNonce = new Date().getTime().toString() + '_token';
-                        return [4 /*yield*/, this.api.createToken({ orderId: orderId, nonce: tokenNonce })];
-                    case 2:
-                        tokenResponse = _a.sent();
-                        this.api.setToken(tokenResponse.token);
-                        return [4 /*yield*/, this.api.showPayment(showPayload)];
-                    case 3:
-                        apiResponse = _a.sent();
-                        elapsed_1 = Date.now() - startTime;
-                        if (!(elapsed_1 < 1500)) return [3 /*break*/, 5];
-                        return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 1500 - elapsed_1); })];
-                    case 4:
-                        _a.sent();
-                        _a.label = 5;
-                    case 5:
-                        if (apiResponse) {
-                            status_1 = (apiResponse.status || '').toUpperCase();
-                            actualRefId = apiResponse.vendorQrRefId || apiResponse.transactionRefId;
-                            if (status_1 !== 'PENDING') {
-                                this._clearCache();
-                                terminalStatus = 'FAILED';
-                                terminalMsg = '';
-                                if (status_1 === 'SUCCESS') {
-                                    terminalStatus = 'SUCCESS';
-                                    terminalMsg = "<span class=\"en-text\">Payment successful.<br>Ref: ".concat(actualRefId || 'N/A', "</span><span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F \u1021\u1031\u102C\u1004\u103A\u1019\u103C\u1004\u103A\u1015\u102B\u1015\u103C\u102E\u104B<br>\u101B\u100A\u103A\u100A\u103D\u103E\u1014\u103A\u1038\u1014\u1036\u1015\u102B\u1010\u103A: ").concat(actualRefId || 'N/A', "</span>");
-                                }
-                                else if (status_1 === 'CANCELLED') {
-                                    terminalStatus = 'CANCELLED';
-                                    terminalMsg = "<span class=\"en-text\">Payment cancelled.</span><span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F\u1000\u102D\u102F \u1015\u101A\u103A\u1016\u103B\u1000\u103A\u101C\u102D\u102F\u1000\u103A\u1015\u102B\u101E\u100A\u103A\u104B</span>";
-                                }
-                                else if (status_1 === 'EXPIRED') {
-                                    terminalStatus = 'EXPIRED';
-                                    terminalMsg = "<span class=\"en-text\">Payment expired.</span><span class=\"mm-text\">\u101E\u1000\u103A\u1010\u1019\u103A\u1038\u1000\u102F\u1014\u103A\u101E\u103D\u102C\u1038\u1015\u102B\u1015\u103C\u102E\u104B</span>";
-                                }
-                                else {
-                                    terminalMsg = "<span class=\"en-text\">Payment failed.</span><span class=\"mm-text\">\u1019\u1021\u1031\u102C\u1004\u103A\u1019\u103C\u1004\u103A\u1015\u102B\u104B</span>";
-                                }
-                                this.ui.showTerminalMessage(apiResponse.orderId || orderId, terminalStatus, terminalMsg, this._getGlobalHandlers(true));
-                                this._triggerEvent({
-                                    success: status_1 === 'SUCCESS',
-                                    failed: status_1 === 'FAILED',
-                                    expired: status_1 === 'EXPIRED',
-                                    cancelled: status_1 === 'CANCELLED',
-                                    orderId: apiResponse.orderId || orderId,
-                                    vendorQrRefId: actualRefId
-                                });
-                                return [2 /*return*/];
-                            }
-                            if (apiResponse.qr && actualRefId) {
-                                mappedPaymentResponse = __assign(__assign({}, apiResponse), { vendorQrRefId: actualRefId });
-                                mappedPaymentPayload = { amount: apiResponse.amount, orderId: apiResponse.orderId, nonce: showPayload.nonce };
-                                localStorage.setItem(this.CACHE_KEY, JSON.stringify({
-                                    payload: mappedPaymentPayload,
-                                    apiResponse: mappedPaymentResponse,
-                                    expireAt: expireAt,
-                                    token: this.api.getToken(),
-                                    environment: this.environment
-                                }));
-                                this._resumePaymentState(mappedPaymentResponse, mappedPaymentPayload, expireAt);
-                                return [2 /*return*/];
-                            }
-                        }
-                        throw new Error("Invalid API Response: Missing QR Data or Reference ID.");
-                    case 6:
-                        error_1 = _a.sent();
-                        this.api.setToken(null);
-                        errMessage = (error_1 === null || error_1 === void 0 ? void 0 : error_1.message) || 'Error occurred while loading payment.';
-                        terminalMsg = "<span class=\"en-text\">".concat(errMessage, "</span><span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F \u1005\u1010\u1004\u103A\u1005\u1009\u103A \u1021\u1019\u103E\u102C\u1038\u1021\u101A\u103D\u1004\u103A\u1038 \u1016\u103C\u1005\u103A\u1015\u103D\u102C\u1038\u101E\u100A\u103A\u104B</span>");
-                        this.ui.showTerminalMessage(orderId || 'N/A', 'FAILED', terminalMsg, this._getGlobalHandlers(true));
-                        this._triggerEvent({ failed: true, orderId: orderId });
-                        return [3 /*break*/, 7];
-                    case 7: return [2 /*return*/];
-                }
-            });
         });
     };
     MMPaySDK.prototype._startPolling = function (payload) {
