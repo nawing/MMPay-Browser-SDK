@@ -1,7 +1,6 @@
-import { MMPaySDK } from '../index';
 import { ICreatePaymentRequestParams, IModalEventResult } from '../types';
-export declare class DeprecatedMMPaySDK extends MMPaySDK {
-    private legacyApi;
-    constructor(publishableKey: string, options?: any);
-    showPaymentModal(params: ICreatePaymentRequestParams, onComplete: (result: IModalEventResult) => void): Promise<void>;
-}
+/**
+ * @deprecated This method is deprecated. Please migrate to the .pay() method.
+ */
+export declare function legacyShowPaymentModal(this: any, // Binds the parent MMPaySDK instance context
+params: ICreatePaymentRequestParams, onComplete: (result: IModalEventResult) => void): Promise<void>;

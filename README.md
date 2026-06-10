@@ -60,7 +60,8 @@ const MMPay = new MMPaySDK({
   apiBaseUrl: "https://xxxxxx"
 })
 
-const { qr } = await MMPay.pay({ amount, orderId });
+const { qr, orderId } = await MMPay.pay({ amount, orderId });
+// get your order Id to your browser
 ```
 
 #### **Browser Plugin Implementation**

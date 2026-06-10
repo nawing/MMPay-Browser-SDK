@@ -168,6 +168,130 @@
         return MMPayAPI;
     }());
 
+    var DeprecatedMMPayAPI = /** @class */ (function () {
+        function DeprecatedMMPayAPI(environment, publishableKey) {
+            this.baseUrl = 'https://ezapi.myanmyanpay.com';
+            this.tokenKey = null;
+            this.environment = environment;
+            this.publishableKey = publishableKey;
+        }
+        DeprecatedMMPayAPI.prototype.setToken = function (token) { this.tokenKey = token; };
+        DeprecatedMMPayAPI.prototype.call = function (endpoint_1) {
+            return __awaiter(this, arguments, void 0, function (endpoint, data) {
+                var headers, response, _a, _b;
+                if (data === void 0) { data = {}; }
+                return __generator(this, function (_c) {
+                    switch (_c.label) {
+                        case 0:
+                            headers = {
+                                'Content-Type': 'application/json',
+                                'Authorization': "Bearer ".concat(this.publishableKey)
+                            };
+                            if (this.tokenKey)
+                                headers['X-MMPay-Btoken'] = this.tokenKey;
+                            return [4 /*yield*/, fetch("".concat(this.baseUrl).concat(endpoint), {
+                                    method: 'POST',
+                                    headers: headers,
+                                    body: JSON.stringify(data)
+                                })];
+                        case 1:
+                            response = _c.sent();
+                            if (!!response.ok) return [3 /*break*/, 3];
+                            _a = Error.bind;
+                            _b = "Legacy API Error: ".concat;
+                            return [4 /*yield*/, response.text()];
+                        case 2: throw new (_a.apply(Error, [void 0, _b.apply("Legacy API Error: ", [_c.sent()])]))();
+                        case 3: return [2 /*return*/, response.json()];
+                    }
+                });
+            });
+        };
+        DeprecatedMMPayAPI.prototype.createToken = function (payload) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    return [2 /*return*/, this.call("/xpayments/".concat(this.environment, "-token-request"), payload)];
+                });
+            });
+        };
+        DeprecatedMMPayAPI.prototype.createPayment = function (payload) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    return [2 /*return*/, this.call("/xpayments/".concat(this.environment, "-payment-create"), payload)];
+                });
+            });
+        };
+        return DeprecatedMMPayAPI;
+    }());
+
+    /**
+     * @deprecated This method is deprecated. Please migrate to the .pay() method.
+     */
+    function legacyShowPaymentModal(// Binds the parent MMPaySDK instance context
+    params, onComplete) {
+        return __awaiter(this, void 0, void 0, function () {
+            var nonce, tokenResponse, apiResponse, modernTokenResponse, actualRefId, expireAt, error_1, terminalMsg;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        console.warn("[MMPaySDK] showPaymentModal() is deprecated. Please migrate to pay(orderId, callback).");
+                        this.ui.renderPreloadScreen(this._getGlobalHandlers());
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 5, , 6]);
+                        nonce = new Date().getTime().toString() + '_mmp';
+                        return [4 /*yield*/, this.legacyApi.createToken({
+                                amount: params.amount,
+                                orderId: params.orderId,
+                                nonce: nonce
+                            })];
+                    case 2:
+                        tokenResponse = _a.sent();
+                        this.legacyApi.setToken(tokenResponse.token);
+                        return [4 /*yield*/, this.legacyApi.createPayment(__assign(__assign({}, params), { nonce: nonce }))];
+                    case 3:
+                        apiResponse = _a.sent();
+                        return [4 /*yield*/, this.api.createToken({
+                                amount: params.amount,
+                                orderId: params.orderId,
+                                nonce: nonce + '_bridge'
+                            })];
+                    case 4:
+                        modernTokenResponse = _a.sent();
+                        this.api.setToken(modernTokenResponse.token);
+                        actualRefId = (apiResponse === null || apiResponse === void 0 ? void 0 : apiResponse.vendorQrRefId) || (apiResponse === null || apiResponse === void 0 ? void 0 : apiResponse.transactionRefId);
+                        if (apiResponse && apiResponse.qr && actualRefId) {
+                            apiResponse.vendorQrRefId = actualRefId;
+                            this.pendingPaymentPayload = __assign(__assign({}, params), { nonce: nonce });
+                            this.pendingApiResponse = apiResponse;
+                            expireAt = Date.now() + 300000;
+                            this.ui.renderQrModalContent(apiResponse, params.orderId, this.merchantName, this._getGlobalHandlers());
+                            // Hand over to the parent modern polling machine
+                            this._startPolling({ orderId: params.orderId, nonce: nonce + '_poll' });
+                            this._startCountdown(params.orderId, expireAt);
+                            this._triggerEvent({
+                                created: true,
+                                orderId: params.orderId,
+                                vendorQrRefId: actualRefId
+                            });
+                        }
+                        else {
+                            throw new Error("Invalid API Response: Missing QR Data.");
+                        }
+                        return [3 /*break*/, 6];
+                    case 5:
+                        error_1 = _a.sent();
+                        if (this.legacyApi)
+                            this.legacyApi.setToken(null);
+                        terminalMsg = "<span class=\"en-text\">".concat((error_1 === null || error_1 === void 0 ? void 0 : error_1.message) || 'Error occurred.', "</span>");
+                        this.ui.showTerminalMessage(params.orderId, 'FAILED', terminalMsg, this._getGlobalHandlers(true));
+                        this._triggerEvent({ failed: true, orderId: params.orderId });
+                        return [3 /*break*/, 6];
+                    case 6: return [2 /*return*/];
+                }
+            });
+        });
+    }
+
     function _getContentCancelModal(design) {
         return "\n<div id=\"mmpay-cancel-view-container\" class=\"mmpay-card\" style=\"padding: 64px 24px 32px 24px; box-sizing: border-box; width: 100%;\">\n    <div class=\"mmpay-toggle-container\">\n        <button class=\"mmpay-toggle-btn btn-en\" onclick=\"MMPayToggleLang('en')\">EN</button>\n        <button class=\"mmpay-toggle-btn btn-mm\" onclick=\"MMPayToggleLang('mm')\">MM</button>\n    </div>\n    <div style=\"margin: 0 auto 24px auto; width: 64px; height: 64px; border-radius: 50%; background-color: var(--mmp-warn-bg); display: flex; align-items: center; justify-content: center; color: #ff9500;\">\n        <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"32\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"2.5\">\n          <path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z\"/>\n        </svg>\n    </div>\n    <h2 style=\"font-size: 1.3rem; font-weight: 700; color: var(--mmp-text-main); margin: 0 0 12px 0;\">\n        <span class=\"en-text\">Cancel Transaction?</span>\n        <span class=\"mm-text\">\u101C\u103D\u103E\u1032\u1015\u103C\u1031\u102C\u1004\u103A\u1038\u1019\u103E\u102F\u1000\u102D\u102F \u1015\u101A\u103A\u1016\u103B\u1000\u103A\u1019\u101C\u102C\u1038</span>\n    </h2>\n    <p style=\"color: var(--mmp-text-sub); margin-top: 0; margin-bottom: 32px; font-size: 0.95rem; line-height: 1.5;\">\n        <span class=\"en-text\">If you haven't paid yet, you can safely cancel this process.</span>\n        <span class=\"mm-text\">\u101E\u1004\u103A\u101E\u100A\u103A \u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F \u1019\u1015\u103C\u102F\u101C\u102F\u1015\u103A\u101B\u101E\u1031\u1038\u1015\u102B\u1000 \u101C\u102F\u1015\u103A\u1004\u1014\u103A\u1038\u1005\u1009\u103A\u1021\u102C\u1038 \u1016\u103B\u1000\u103A\u101E\u102D\u1019\u103A\u1038\u1014\u102D\u102F\u1004\u103A\u1015\u102B\u101E\u100A\u103A\u104B</span>\n    </p>\n    <div style=\"display: flex; gap: 10px; flex-direction: column;\">\n        <button class=\"mmpay-button mmpay-button-danger\" onclick=\"MMPayCloseModal(true)\">\n            <span class=\"en-text\">Stop Process</span>\n            <span class=\"mm-text\">\u101C\u102F\u1015\u103A\u1004\u1014\u103A\u1038\u1005\u1009\u103A \u101B\u1015\u103A\u1010\u1014\u1037\u103A\u1019\u100A\u103A</span>\n        </button>\n        <button class=\"mmpay-button mmpay-button-secondary\" onclick=\"MMPayReRenderModal()\">\n            <span class=\"en-text\">Go Back</span>\n            <span class=\"mm-text\">\u1021\u1014\u1031\u102C\u1000\u103A\u101E\u102D\u102F\u1037 \u1015\u103C\u1014\u103A\u101E\u103D\u102C\u1038\u1019\u100A\u103A</span>\n        </button>\n    </div>\n</div>";
     }
@@ -391,6 +515,7 @@
             this.countdownIntervalId = undefined;
             this.pendingApiResponse = null;
             this.pendingPaymentPayload = null;
+            this.legacyApi = null;
             if (!publishableKey) {
                 throw new Error("A Publishable Key is required to initialize [MMPaySDK].");
             }
@@ -406,19 +531,40 @@
             var baseUrl = options.baseUrl || 'https://browser-engine-production.up.railway.app';
             this.merchantName = options.merchantName || 'MyanMyanPay';
             this.POLL_INTERVAL_MS = options.pollInterval || 5000;
-            // Dependency Instantiation
+            // Standard Core Injections
             this.api = new MMPayAPI(baseUrl, this.environment, publishableKey);
             this.ui = new MMPayUI({
                 mode: ((_a = options.design) === null || _a === void 0 ? void 0 : _a.mode) || 'light',
                 color: (_b = options.design) === null || _b === void 0 ? void 0 : _b.color
             });
+            // Conditional Provisioning for Existing Users
+            // if (options.baseUrl === 'https://ezapi.myanmyanpay.com') {
+            // }
+            this.legacyApi = new DeprecatedMMPayAPI(this.environment, publishableKey);
             if (typeof window !== 'undefined') {
                 this._checkAndAutoResume();
             }
         }
+        /**
+         * Backward-Compatible UI Trigger
+         */
+        MMPaySDK.prototype.showPaymentModal = function (params, onComplete) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    if (!this.legacyApi) {
+                        throw new Error("showPaymentModal() is discontinued on the modern infrastructure. Use .pay(orderId, callback) instead.");
+                    }
+                    // Forward context execution to the decoupled function
+                    return [2 /*return*/, legacyShowPaymentModal.call(this, params, onComplete)];
+                });
+            });
+        };
+        /**
+         * Modern Tokenized Payload Flow
+         */
         MMPaySDK.prototype.pay = function (orderId, onComplete) {
             return __awaiter(this, void 0, void 0, function () {
-                var cachedData, parsed, showPayload, expireAt, startTime, tokenNonce, tokenResponse, apiResponse, elapsed_1, status_1, actualRefId, terminalStatus, terminalMsg, mappedPaymentResponse, mappedPaymentPayload, error_1, errMessage, terminalMsg;
+                var cachedData, parsed, showPayload, expireAt, startTime, tokenNonce, tokenResponse, apiResponse, elapsed_1, status_1, actualRefId, terminalStatus, terminalMsg, mappedPaymentResponse, mappedPaymentPayload, error_1, terminalMsg;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
@@ -471,18 +617,18 @@
                                     terminalMsg = '';
                                     if (status_1 === 'SUCCESS') {
                                         terminalStatus = 'SUCCESS';
-                                        terminalMsg = "<span class=\"en-text\">Payment successful.<br>Ref: ".concat(actualRefId || 'N/A', "</span><span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F \u1021\u1031\u102C\u1004\u103A\u1019\u103C\u1004\u103A\u1015\u102B\u1015\u103C\u102E\u104B<br>\u101B\u100A\u103A\u100A\u103D\u103E\u1014\u103A\u1038\u1014\u1036\u1015\u102B\u1010\u103A: ").concat(actualRefId || 'N/A', "</span>");
+                                        terminalMsg = "<span class=\"en-text\">Payment successful.<br>Ref: ".concat(actualRefId || 'N/A', "</span>");
                                     }
                                     else if (status_1 === 'CANCELLED') {
                                         terminalStatus = 'CANCELLED';
-                                        terminalMsg = "<span class=\"en-text\">Payment cancelled.</span><span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F\u1000\u102D\u102F \u1015\u101A\u103A\u1016\u103B\u1000\u103A\u101C\u102D\u102F\u1000\u103A\u1015\u102B\u101E\u100A\u103A\u104B</span>";
+                                        terminalMsg = "<span class=\"en-text\">Payment cancelled.</span>";
                                     }
                                     else if (status_1 === 'EXPIRED') {
                                         terminalStatus = 'EXPIRED';
-                                        terminalMsg = "<span class=\"en-text\">Payment expired.</span><span class=\"mm-text\">\u101E\u1000\u103A\u1010\u1019\u103A\u1038\u1000\u102F\u1014\u103A\u101E\u103D\u102C\u1038\u1015\u102B\u1015\u103C\u102E\u104B</span>";
+                                        terminalMsg = "<span class=\"en-text\">Payment expired.</span>";
                                     }
                                     else {
-                                        terminalMsg = "<span class=\"en-text\">Payment failed.</span><span class=\"mm-text\">\u1019\u1021\u1031\u102C\u1004\u103A\u1019\u103C\u1004\u103A\u1015\u102B\u104B</span>";
+                                        terminalMsg = "<span class=\"en-text\">Payment failed.</span>";
                                     }
                                     this.ui.showTerminalMessage(apiResponse.orderId || orderId, terminalStatus, terminalMsg, this._getGlobalHandlers(true));
                                     this._triggerEvent({
@@ -509,12 +655,11 @@
                                     return [2 /*return*/];
                                 }
                             }
-                            throw new Error("Invalid API Response: Missing QR Data or Reference ID.");
+                            throw new Error("Invalid API Response: Missing QR Data.");
                         case 6:
                             error_1 = _a.sent();
                             this.api.setToken(null);
-                            errMessage = (error_1 === null || error_1 === void 0 ? void 0 : error_1.message) || 'Error occurred while loading payment.';
-                            terminalMsg = "<span class=\"en-text\">".concat(errMessage, "</span><span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F \u1005\u1010\u1004\u103A\u1005\u1009\u103A \u1021\u1019\u103E\u102C\u1038\u1021\u101A\u103D\u1004\u103A\u1038 \u1016\u103C\u1005\u103A\u1015\u103D\u102C\u1038\u101E\u100A\u103A\u104B</span>");
+                            terminalMsg = "<span class=\"en-text\">".concat((error_1 === null || error_1 === void 0 ? void 0 : error_1.message) || 'Error occurred.', "</span>");
                             this.ui.showTerminalMessage(orderId || 'N/A', 'FAILED', terminalMsg, this._getGlobalHandlers(true));
                             this._triggerEvent({ failed: true, orderId: orderId });
                             return [3 /*break*/, 7];
@@ -523,6 +668,7 @@
                 });
             });
         };
+        // --- Protected Infrastructure Mappers ---
         MMPaySDK.prototype._getGlobalHandlers = function (isTerminal) {
             var _this = this;
             if (isTerminal === void 0) { isTerminal = false; }
@@ -554,10 +700,7 @@
                                         })];
                                 case 2:
                                     _a.sent();
-                                    this._triggerEvent({
-                                        cancelled: true,
-                                        orderId: this.pendingPaymentPayload.orderId
-                                    });
+                                    this._triggerEvent({ cancelled: true, orderId: this.pendingPaymentPayload.orderId });
                                     return [3 /*break*/, 4];
                                 case 3:
                                     _a.sent();
@@ -566,9 +709,8 @@
                                     this._clearCache();
                                     _a.label = 5;
                                 case 5:
-                                    if (isTerminal) {
+                                    if (isTerminal)
                                         this._clearCache();
-                                    }
                                     this._cleanup();
                                     return [3 /*break*/, 7];
                                 case 6:
@@ -600,9 +742,7 @@
             }
             this.ui.cleanupModal(true);
         };
-        MMPaySDK.prototype._clearCache = function () {
-            localStorage.removeItem(this.CACHE_KEY);
-        };
+        MMPaySDK.prototype._clearCache = function () { localStorage.removeItem(this.CACHE_KEY); };
         MMPaySDK.prototype._checkAndAutoResume = function () {
             var cachedData = localStorage.getItem(this.CACHE_KEY);
             if (!cachedData)
@@ -623,26 +763,20 @@
         MMPaySDK.prototype._resumePaymentState = function (apiResponse, payload, expireAt) {
             this.pendingPaymentPayload = payload;
             this.pendingApiResponse = apiResponse;
-            // Strict Fallback Normalization
             var actualRefId = apiResponse.vendorQrRefId || apiResponse.transactionRefId;
             apiResponse.vendorQrRefId = actualRefId;
             this.ui.renderQrModalContent(apiResponse, payload.orderId, this.merchantName, this._getGlobalHandlers());
             this._startPolling(payload);
             this._startCountdown(payload.orderId, expireAt);
-            this._triggerEvent({
-                created: true,
-                orderId: payload.orderId,
-                vendorQrRefId: actualRefId
-            });
+            this._triggerEvent({ created: true, orderId: payload.orderId, vendorQrRefId: actualRefId });
         };
         MMPaySDK.prototype._startPolling = function (payload) {
             return __awaiter(this, void 0, void 0, function () {
                 var checkStatus;
                 var _this = this;
                 return __generator(this, function (_a) {
-                    if (this.pollIntervalId !== undefined) {
+                    if (this.pollIntervalId !== undefined)
                         window.clearInterval(this.pollIntervalId);
-                    }
                     checkStatus = function () { return __awaiter(_this, void 0, void 0, function () {
                         var response, status_2, actualRefId, messageHtml;
                         return __generator(this, function (_a) {
@@ -659,13 +793,13 @@
                                         this._clearCache();
                                         messageHtml = '';
                                         if (status_2 === 'SUCCESS') {
-                                            messageHtml = "<span class=\"en-text\">Payment successful.<br>Ref: ".concat(actualRefId || 'N/A', "</span>\n             <span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F \u1021\u1031\u102C\u1004\u103A\u1019\u103C\u1004\u103A\u1015\u102B\u1015\u103C\u102E\u104B<br>\u101B\u100A\u103A\u100A\u103D\u103E\u1014\u103A\u1038\u1014\u1036\u1015\u102B\u1010\u103A: ").concat(actualRefId || 'N/A', "</span>");
+                                            messageHtml = "<span class=\"en-text\">Payment successful.<br>Ref: ".concat(actualRefId || 'N/A', "</span>");
                                         }
                                         else if (status_2 === 'CANCELLED') {
-                                            messageHtml = "<span class=\"en-text\">Payment cancelled.</span>\n             <span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F\u1000\u102D\u102F \u1015\u101A\u103A\u1016\u103B\u1000\u103A\u101C\u102D\u102F\u1000\u103A\u1015\u102B\u101E\u100A\u103A\u104B</span>";
+                                            messageHtml = "<span class=\"en-text\">Payment cancelled.</span>";
                                         }
                                         else {
-                                            messageHtml = "<span class=\"en-text\">Payment ".concat(status_2 === 'FAILED' ? 'failed' : 'expired', ".</span>\n             <span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F ").concat(status_2 === 'FAILED' ? 'မအောင်မြင်ပါ' : 'သက်တမ်းကုန်သွားပါပြီ', "\u104B</span>");
+                                            messageHtml = "<span class=\"en-text\">Payment ".concat(status_2 === 'FAILED' ? 'failed' : 'expired', ".</span>");
                                         }
                                         this.ui.showTerminalMessage(response.orderId || 'N/A', status_2, messageHtml, this._getGlobalHandlers(true));
                                         this.api.setToken(null);
@@ -694,9 +828,8 @@
         };
         MMPaySDK.prototype._startCountdown = function (orderId, expireAt) {
             var _this = this;
-            if (this.countdownIntervalId !== undefined) {
+            if (this.countdownIntervalId !== undefined)
                 window.clearInterval(this.countdownIntervalId);
-            }
             var updateDisplay = function () {
                 var timerElement = document.getElementById('mmpay-countdown-text');
                 var remaining = Math.max(0, Math.floor((expireAt - Date.now()) / 1000));
@@ -714,7 +847,7 @@
                     if (currentRemaining <= 0) {
                         this._cleanup();
                         this._clearCache();
-                        this.ui.showTerminalMessage(orderId, 'EXPIRED', '<span class="en-text">Time expired.</span><span class="mm-text">သတ်မှတ်ချိန်ကုန်သွားပါပြီ။</span>', this._getGlobalHandlers(true));
+                        this.ui.showTerminalMessage(orderId, 'EXPIRED', '<span class="en-text">Time expired.</span>', this._getGlobalHandlers(true));
                         this._triggerEvent({ expired: true, orderId: orderId });
                     }
                     return [2 /*return*/];

@@ -1,5 +1,8 @@
 import {MMPayAPI} from './api';
+import {DeprecatedMMPayAPI} from './deprecated/api';
+import {legacyShowPaymentModal} from './deprecated/showPaymentModal';
 import {
+  ICreatePaymentRequestParams,
   ICreatePaymentResponse,
   IModalEventResult,
   IPaymentShowRequestParams,
@@ -9,22 +12,23 @@ import {
 import {MMPayUI} from './ui';
 
 export class MMPaySDK {
-  protected POLL_INTERVAL_MS: number;
-  protected readonly TIMEOUT_SECONDS: number = 300;
-  protected readonly CACHE_KEY: string = 'mmpay_pending_tx';
+  private POLL_INTERVAL_MS: number;
+  private readonly TIMEOUT_SECONDS: number = 300;
+  private readonly CACHE_KEY: string = 'mmpay_pending_tx';
 
-  protected environment: 'sandbox' | 'production';
+  private environment: 'sandbox' | 'production';
   protected merchantName: string;
-  protected onCompleteCallback: ((result: IModalEventResult) => void) | null = null;
+  private onCompleteCallback: ((result: IModalEventResult) => void) | null = null;
 
-  protected pollIntervalId: number | undefined = undefined;
-  protected countdownIntervalId: number | undefined = undefined;
+  private pollIntervalId: number | undefined = undefined;
+  private countdownIntervalId: number | undefined = undefined;
 
-  protected pendingApiResponse: any | null = null;
-  protected pendingPaymentPayload: any | null = null;
+  private pendingApiResponse: any | null = null;
+  private pendingPaymentPayload: any | null = null;
 
-  // Clean Internal Dependencies
+  // Clean Infrastructure Dependencies
   protected api: MMPayAPI;
+  protected legacyApi: DeprecatedMMPayAPI | null = null;
   protected ui: MMPayUI;
 
   constructor(publishableKey: string, options: SDKOptions = {}) {
@@ -41,26 +45,41 @@ export class MMPaySDK {
     }
 
     const baseUrl = options.baseUrl || 'https://browser-engine-production.up.railway.app';
-
     this.merchantName = options.merchantName || 'MyanMyanPay';
     this.POLL_INTERVAL_MS = options.pollInterval || 5000;
 
-    // Dependency Instantiation
+    // Standard Core Injections
     this.api = new MMPayAPI(baseUrl, this.environment, publishableKey);
     this.ui = new MMPayUI({
       mode: options.design?.mode || 'light',
       color: options.design?.color
     });
 
+    this.legacyApi = new DeprecatedMMPayAPI(this.environment, publishableKey);
+
     if (typeof window !== 'undefined') {
       this._checkAndAutoResume();
     }
   }
 
+  /**
+   * Backward-Compatible UI Trigger
+   */
+  public async showPaymentModal(
+    params: ICreatePaymentRequestParams,
+    onComplete: (result: IModalEventResult) => void
+  ): Promise<void> {
+    if (!this.legacyApi) {
+      throw new Error("showPaymentModal() is discontinued on the modern infrastructure. Use .pay(orderId, callback) instead.");
+    }
+    return legacyShowPaymentModal.call(this, params, onComplete);
+  }
 
+  /**
+   * Modern Tokenized Payload Flow
+   */
   public async pay(orderId: string, onComplete: (result: IModalEventResult) => void): Promise<void> {
     this.onCompleteCallback = onComplete;
-
     const cachedData = localStorage.getItem(this.CACHE_KEY);
     if (cachedData) {
       try {
@@ -83,13 +102,11 @@ export class MMPaySDK {
 
     try {
       const startTime = Date.now();
-
       const tokenNonce = new Date().getTime().toString() + '_token';
       const tokenResponse = await this.api.createToken({orderId, nonce: tokenNonce});
       this.api.setToken(tokenResponse.token);
 
       const apiResponse: any = await this.api.showPayment(showPayload);
-
       const elapsed = Date.now() - startTime;
       if (elapsed < 1500) await new Promise(resolve => setTimeout(resolve, 1500 - elapsed));
 
@@ -104,19 +121,18 @@ export class MMPaySDK {
 
           if (status === 'SUCCESS') {
             terminalStatus = 'SUCCESS';
-            terminalMsg = `<span class="en-text">Payment successful.<br>Ref: ${actualRefId || 'N/A'}</span><span class="mm-text">ငွေပေးချေမှု အောင်မြင်ပါပြီ။<br>ရည်ညွှန်းနံပါတ်: ${actualRefId || 'N/A'}</span>`;
+            terminalMsg = `<span class="en-text">Payment successful.<br>Ref: ${actualRefId || 'N/A'}</span>`;
           } else if (status === 'CANCELLED') {
             terminalStatus = 'CANCELLED';
-            terminalMsg = `<span class="en-text">Payment cancelled.</span><span class="mm-text">ငွေပေးချေမှုကို ပယ်ဖျက်လိုက်ပါသည်။</span>`;
+            terminalMsg = `<span class="en-text">Payment cancelled.</span>`;
           } else if (status === 'EXPIRED') {
             terminalStatus = 'EXPIRED';
-            terminalMsg = `<span class="en-text">Payment expired.</span><span class="mm-text">သက်တမ်းကုန်သွားပါပြီ။</span>`;
+            terminalMsg = `<span class="en-text">Payment expired.</span>`;
           } else {
-            terminalMsg = `<span class="en-text">Payment failed.</span><span class="mm-text">မအောင်မြင်ပါ။</span>`;
+            terminalMsg = `<span class="en-text">Payment failed.</span>`;
           }
 
           this.ui.showTerminalMessage(apiResponse.orderId || orderId, terminalStatus, terminalMsg, this._getGlobalHandlers(true));
-
           this._triggerEvent({
             success: status === 'SUCCESS',
             failed: status === 'FAILED',
@@ -129,10 +145,7 @@ export class MMPaySDK {
         }
 
         if (apiResponse.qr && actualRefId) {
-          const mappedPaymentResponse: ICreatePaymentResponse = {
-            ...apiResponse,
-            vendorQrRefId: actualRefId
-          };
+          const mappedPaymentResponse: ICreatePaymentResponse = {...apiResponse, vendorQrRefId: actualRefId};
           const mappedPaymentPayload = {amount: apiResponse.amount, orderId: apiResponse.orderId, nonce: showPayload.nonce};
 
           localStorage.setItem(this.CACHE_KEY, JSON.stringify({
@@ -146,18 +159,16 @@ export class MMPaySDK {
           return;
         }
       }
-
-      throw new Error("Invalid API Response: Missing QR Data or Reference ID.");
+      throw new Error("Invalid API Response: Missing QR Data.");
     } catch (error: any) {
       this.api.setToken(null);
-      const errMessage = error?.message || 'Error occurred while loading payment.';
-      const terminalMsg = `<span class="en-text">${errMessage}</span><span class="mm-text">ငွေပေးချေမှု စတင်စဉ် အမှားအယွင်း ဖြစ်ပွားသည်။</span>`;
+      const terminalMsg = `<span class="en-text">${error?.message || 'Error occurred.'}</span>`;
       this.ui.showTerminalMessage(orderId || 'N/A', 'FAILED', terminalMsg, this._getGlobalHandlers(true));
       this._triggerEvent({failed: true, orderId: orderId});
     }
   }
 
-
+  // --- Protected Infrastructure Mappers ---
   protected _getGlobalHandlers(isTerminal: boolean = false) {
     return {
       MMPayToggleLang: (lang: string) => {
@@ -173,16 +184,11 @@ export class MMPaySDK {
                 orderId: this.pendingPaymentPayload.orderId,
                 nonce: new Date().getTime().toString() + '_cancel'
               });
-              this._triggerEvent({
-                cancelled: true,
-                orderId: this.pendingPaymentPayload.orderId
-              });
+              this._triggerEvent({cancelled: true, orderId: this.pendingPaymentPayload.orderId});
             } catch (e) { }
             this._clearCache();
           }
-          if (isTerminal) {
-            this._clearCache();
-          }
+          if (isTerminal) this._clearCache();
           this._cleanup();
         } else {
           this.ui.showCancelConfirmationModal();
@@ -193,32 +199,21 @@ export class MMPaySDK {
 
   protected _triggerEvent(eventData: IModalEventResult): void {
     if (this.onCompleteCallback) {
-      try {
-        this.onCompleteCallback(eventData);
-      } catch (e) { }
+      try {this.onCompleteCallback(eventData);} catch (e) { }
     }
   }
 
   protected _cleanup(): void {
-    if (this.pollIntervalId !== undefined) {
-      window.clearInterval(this.pollIntervalId);
-      this.pollIntervalId = undefined;
-    }
-    if (this.countdownIntervalId !== undefined) {
-      window.clearInterval(this.countdownIntervalId);
-      this.countdownIntervalId = undefined;
-    }
+    if (this.pollIntervalId !== undefined) {window.clearInterval(this.pollIntervalId); this.pollIntervalId = undefined;}
+    if (this.countdownIntervalId !== undefined) {window.clearInterval(this.countdownIntervalId); this.countdownIntervalId = undefined;}
     this.ui.cleanupModal(true);
   }
 
-  protected _clearCache(): void {
-    localStorage.removeItem(this.CACHE_KEY);
-  }
+  protected _clearCache(): void {localStorage.removeItem(this.CACHE_KEY);}
 
   private _checkAndAutoResume(): void {
     const cachedData = localStorage.getItem(this.CACHE_KEY);
     if (!cachedData) return;
-
     try {
       const parsed = JSON.parse(cachedData);
       if (parsed.environment !== this.environment || Date.now() >= parsed.expireAt) {
@@ -235,8 +230,6 @@ export class MMPaySDK {
   private _resumePaymentState(apiResponse: any, payload: any, expireAt: number): void {
     this.pendingPaymentPayload = payload;
     this.pendingApiResponse = apiResponse;
-
-    // Strict Fallback Normalization
     const actualRefId = apiResponse.vendorQrRefId || apiResponse.transactionRefId;
     apiResponse.vendorQrRefId = actualRefId;
 
@@ -244,17 +237,11 @@ export class MMPaySDK {
     this._startPolling(payload);
     this._startCountdown(payload.orderId, expireAt);
 
-    this._triggerEvent({
-      created: true,
-      orderId: payload.orderId,
-      vendorQrRefId: actualRefId
-    });
+    this._triggerEvent({created: true, orderId: payload.orderId, vendorQrRefId: actualRefId});
   }
 
   protected async _startPolling(payload: IPollingRequest): Promise<void> {
-    if (this.pollIntervalId !== undefined) {
-      window.clearInterval(this.pollIntervalId);
-    }
+    if (this.pollIntervalId !== undefined) window.clearInterval(this.pollIntervalId);
     const checkStatus = async () => {
       try {
         const response: any = await this.api.pollPayment(payload);
@@ -267,19 +254,15 @@ export class MMPaySDK {
 
           let messageHtml = '';
           if (status === 'SUCCESS') {
-            messageHtml = `<span class="en-text">Payment successful.<br>Ref: ${actualRefId || 'N/A'}</span>
-             <span class="mm-text">ငွေပေးချေမှု အောင်မြင်ပါပြီ။<br>ရည်ညွှန်းနံပါတ်: ${actualRefId || 'N/A'}</span>`;
+            messageHtml = `<span class="en-text">Payment successful.<br>Ref: ${actualRefId || 'N/A'}</span>`;
           } else if (status === 'CANCELLED') {
-            messageHtml = `<span class="en-text">Payment cancelled.</span>
-             <span class="mm-text">ငွေပေးချေမှုကို ပယ်ဖျက်လိုက်ပါသည်။</span>`;
+            messageHtml = `<span class="en-text">Payment cancelled.</span>`;
           } else {
-            messageHtml = `<span class="en-text">Payment ${status === 'FAILED' ? 'failed' : 'expired'}.</span>
-             <span class="mm-text">ငွေပေးချေမှု ${status === 'FAILED' ? 'မအောင်မြင်ပါ' : 'သက်တမ်းကုန်သွားပါပြီ'}။</span>`;
+            messageHtml = `<span class="en-text">Payment ${status === 'FAILED' ? 'failed' : 'expired'}.</span>`;
           }
 
-          this.ui.showTerminalMessage(response.orderId || 'N/A', status as 'SUCCESS' | 'FAILED' | 'EXPIRED' | 'CANCELLED', messageHtml, this._getGlobalHandlers(true));
+          this.ui.showTerminalMessage(response.orderId || 'N/A', status as any, messageHtml, this._getGlobalHandlers(true));
           this.api.setToken(null);
-
           this._triggerEvent({
             success: status === 'SUCCESS',
             failed: status === 'FAILED',
@@ -296,9 +279,7 @@ export class MMPaySDK {
   }
 
   protected _startCountdown(orderId: string, expireAt: number): void {
-    if (this.countdownIntervalId !== undefined) {
-      window.clearInterval(this.countdownIntervalId);
-    }
+    if (this.countdownIntervalId !== undefined) window.clearInterval(this.countdownIntervalId);
     const updateDisplay = () => {
       const timerElement = document.getElementById('mmpay-countdown-text');
       const remaining = Math.max(0, Math.floor((expireAt - Date.now()) / 1000));
@@ -315,8 +296,8 @@ export class MMPaySDK {
       if (currentRemaining <= 0) {
         this._cleanup();
         this._clearCache();
-        this.ui.showTerminalMessage(orderId, 'EXPIRED', '<span class="en-text">Time expired.</span><span class="mm-text">သတ်မှတ်ချိန်ကုန်သွားပါပြီ။</span>', this._getGlobalHandlers(true));
-        this._triggerEvent({expired: true, orderId: orderId});
+        this.ui.showTerminalMessage(orderId, 'EXPIRED', '<span class="en-text">Time expired.</span>', this._getGlobalHandlers(true));
+        this._triggerEvent({expired: true, orderId});
       }
     }, 1000);
   }
