@@ -17,13 +17,7 @@ export declare class MMPaySDK {
     protected xApi: XMMPayAPI | null;
     protected ui: MMPayUI;
     constructor(publishableKey: string, options?: SDKOptions);
-    /**
-     * Backward-Compatible UI Trigger
-     */
     showPaymentModal(params: ICreatePaymentRequestParams, onComplete: (result: IModalEventResult) => void): Promise<void>;
-    /**
-     * Modern Tokenized Payload Flow
-     */
     pay(orderId: string, onComplete: (result: IModalEventResult) => void): Promise<void>;
     protected _getGlobalHandlers(isTerminal?: boolean): {
         MMPayToggleLang: (lang: string) => void;

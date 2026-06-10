@@ -171,7 +171,9 @@ var XMMPayAPI = /** @class */ (function () {
         this.environment = environment;
         this.publishableKey = publishableKey;
     }
-    XMMPayAPI.prototype.setToken = function (token) { this.tokenKey = token; };
+    XMMPayAPI.prototype.setToken = function (token) {
+        this.tokenKey = token;
+    };
     XMMPayAPI.prototype.call = function (endpoint_1) {
         return __awaiter(this, arguments, void 0, function (endpoint, data) {
             var headers, response, _a, _b;
@@ -219,16 +221,13 @@ var XMMPayAPI = /** @class */ (function () {
     return XMMPayAPI;
 }());
 
-/**
- * @showPaymentModal
- */
-function showPaymentModal(// Binds the parent MMPaySDK instance context
-params, onComplete) {
+function showPaymentModal(params, onComplete) {
     return __awaiter(this, void 0, void 0, function () {
         var nonce, tokenResponse, apiResponse, modernTokenResponse, actualRefId, expireAt, error_1, terminalMsg;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
+                    this.onCompleteCallback = onComplete;
                     this.ui.renderPreloadScreen(this._getGlobalHandlers());
                     _a.label = 1;
                 case 1:
@@ -260,13 +259,13 @@ params, onComplete) {
                         this.pendingApiResponse = apiResponse;
                         expireAt = Date.now() + 300000;
                         this.ui.renderQrModalContent(apiResponse, params.orderId, this.merchantName, this._getGlobalHandlers());
-                        // Hand over to the parent modern polling machine
                         this._startPolling({ orderId: params.orderId, nonce: nonce + '_poll' });
                         this._startCountdown(params.orderId, expireAt);
                         this._triggerEvent({
                             created: true,
                             orderId: params.orderId,
-                            vendorQrRefId: actualRefId
+                            vendorQrRefId: actualRefId,
+                            amount: params.amount
                         });
                     }
                     else {
@@ -279,7 +278,11 @@ params, onComplete) {
                         this.xApi.setToken(null);
                     terminalMsg = "<span class=\"en-text\">".concat((error_1 === null || error_1 === void 0 ? void 0 : error_1.message) || 'Error occurred.', "</span>");
                     this.ui.showTerminalMessage(params.orderId, 'FAILED', terminalMsg, this._getGlobalHandlers(true));
-                    this._triggerEvent({ failed: true, orderId: params.orderId });
+                    this._triggerEvent({
+                        failed: true,
+                        orderId: params.orderId,
+                        amount: params.amount
+                    });
                     return [3 /*break*/, 6];
                 case 6: return [2 /*return*/];
             }
@@ -288,7 +291,7 @@ params, onComplete) {
 }
 
 function _getContentCancelModal(design) {
-    return "\n<div id=\"mmpay-cancel-view-container\" class=\"mmpay-card\" style=\"padding: 64px 24px 32px 24px; box-sizing: border-box; width: 100%;\">\n    <div class=\"mmpay-toggle-container\">\n        <button class=\"mmpay-toggle-btn btn-en\" onclick=\"MMPayToggleLang('en')\">EN</button>\n        <button class=\"mmpay-toggle-btn btn-mm\" onclick=\"MMPayToggleLang('mm')\">MM</button>\n    </div>\n    <div style=\"margin: 0 auto 24px auto; width: 64px; height: 64px; border-radius: 50%; background-color: var(--mmp-warn-bg); display: flex; align-items: center; justify-content: center; color: #ff9500;\">\n        <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"32\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"2.5\">\n          <path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z\"/>\n        </svg>\n    </div>\n    <h2 style=\"font-size: 1.3rem; font-weight: 700; color: var(--mmp-text-main); margin: 0 0 12px 0;\">\n        <span class=\"en-text\">Cancel Transaction?</span>\n        <span class=\"mm-text\">\u101C\u103D\u103E\u1032\u1015\u103C\u1031\u102C\u1004\u103A\u1038\u1019\u103E\u102F\u1000\u102D\u102F \u1015\u101A\u103A\u1016\u103B\u1000\u103A\u1019\u101C\u102C\u1038</span>\n    </h2>\n    <p style=\"color: var(--mmp-text-sub); margin-top: 0; margin-bottom: 32px; font-size: 0.95rem; line-height: 1.5;\">\n        <span class=\"en-text\">If you haven't paid yet, you can safely cancel this process.</span>\n        <span class=\"mm-text\">\u101E\u1004\u103A\u101E\u100A\u103A \u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F \u1019\u1015\u103C\u102F\u101C\u102F\u1015\u103A\u101B\u101E\u1031\u1038\u1015\u102B\u1000 \u101C\u102F\u1015\u103A\u1004\u1014\u103A\u1038\u1005\u1009\u103A\u1021\u102C\u1038 \u1016\u103B\u1000\u103A\u101E\u102D\u1019\u103A\u1038\u1014\u102D\u102F\u1004\u103A\u1015\u102B\u101E\u100A\u103A\u104B</span>\n    </p>\n    <div style=\"display: flex; gap: 10px; flex-direction: column;\">\n        <button class=\"mmpay-button mmpay-button-danger\" onclick=\"MMPayCloseModal(true)\">\n            <span class=\"en-text\">Stop Process</span>\n            <span class=\"mm-text\">\u101C\u102F\u1015\u103A\u1004\u1014\u103A\u1038\u1005\u1009\u103A \u101B\u1015\u103A\u1010\u1014\u1037\u103A\u1019\u100A\u103A</span>\n        </button>\n        <button class=\"mmpay-button mmpay-button-secondary\" onclick=\"MMPayReRenderModal()\">\n            <span class=\"en-text\">Go Back</span>\n            <span class=\"mm-text\">\u1021\u1014\u1031\u102C\u1000\u103A\u101E\u102D\u102F\u1037 \u1015\u103C\u1014\u103A\u101E\u103D\u102C\u1038\u1019\u100A\u103A</span>\n        </button>\n    </div>\n</div>";
+    return "\n<div id=\"mmpay-cancel-view-container\" class=\"mmpay-card\" style=\"padding: 64px 24px 32px 24px; box-sizing: border-box; width: 100%;\">\n    <div class=\"mmpay-toggle-container\">\n        <button class=\"mmpay-toggle-btn btn-en\" onclick=\"MMPayToggleLang('en')\">EN</button>\n        <button class=\"mmpay-toggle-btn btn-mm\" onclick=\"MMPayToggleLang('mm')\">MM</button>\n    </div>\n    <div style=\"margin: 0 auto 24px auto; width: 64px; height: 64px; border-radius: 50%; background-color: var(--mmp-warn-bg); display: flex; align-items: center; justify-content: center; color: #ff9500;\">\n        <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"32\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"2.5\">\n          <path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z\"/>\n        </svg>\n    </div>\n    <h2 style=\"font-size: 1.3rem; font-weight: 700; color: var(--mmp-text-main); margin: 0 0 12px 0;\">\n        <span class=\"en-text\">Cancel Transaction?</span>\n        <span class=\"mm-text\">\u101C\u102F\u1015\u103A\u1004\u1014\u103A\u1038\u1005\u1009\u103A\u1000\u102D\u102F \u1015\u101A\u103A\u1016\u103B\u1000\u103A\u1019\u100A\u103A\u101C\u102C\u1038?</span>\n    </h2>\n    <p style=\"color: var(--mmp-text-sub); margin-top: 0; margin-bottom: 32px; font-size: 0.95rem; line-height: 1.5;\">\n        <span class=\"en-text\">If you haven't paid yet, you can safely cancel this process.</span>\n        <span class=\"mm-text\">\u1004\u103D\u1031\u1019\u1015\u1031\u1038\u1001\u103B\u1031\u101B\u101E\u1031\u1038\u1015\u102B\u1000 \u101C\u102F\u1015\u103A\u1004\u1014\u103A\u1038\u1005\u1009\u103A\u1000\u102D\u102F \u1018\u1031\u1038\u1000\u1004\u103A\u1038\u1005\u103D\u102C \u1015\u101A\u103A\u1016\u103B\u1000\u103A\u1014\u102D\u102F\u1004\u103A\u1015\u102B\u101E\u100A\u103A\u104B</span>\n    </p>\n    <div style=\"display: flex; gap: 10px; flex-direction: column;\">\n        <button class=\"mmpay-button mmpay-button-danger\" onclick=\"MMPayCloseModal(true)\">\n            <span class=\"en-text\">Stop Process</span>\n            <span class=\"mm-text\">\u101B\u1015\u103A\u1010\u1014\u1037\u103A\u1019\u100A\u103A</span>\n        </button>\n        <button class=\"mmpay-button mmpay-button-secondary\" onclick=\"MMPayReRenderModal()\">\n            <span class=\"en-text\">Go Back</span>\n            <span class=\"mm-text\">\u1014\u1031\u102C\u1000\u103A\u101E\u102D\u102F\u1037</span>\n        </button>\n    </div>\n</div>";
 }
 function _getContentCoreCss(design) {
     var mode = (design === null || design === void 0 ? void 0 : design.mode) || 'light';
@@ -299,14 +302,14 @@ function _getContentCoreCss(design) {
         cardBg = isDark ? 'rgba(28, 28, 30, 0.75)' : 'rgba(255, 255, 255, 0.75)';
     }
     var backdrop = isTranslucent ? 'blur(20px)' : 'none';
-    return "\n@import url('https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&display=swap');\n#mmpay-full-modal {\n  --mmp-card-bg: ".concat(cardBg, ";\n  --mmp-card-backdrop: ").concat(backdrop, ";\n  --mmp-text-main: ").concat(isDark ? '#f5f5f7' : '#1d1d1f', ";\n  --mmp-text-sub: ").concat(isDark ? 'rgba(235, 235, 245, 0.6)' : '#86868b', ";\n  --mmp-border: ").concat(isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)', ";\n  --mmp-btn-main-bg: ").concat(isDark ? '#ffffff' : '#3a3a3c', ";\n  --mmp-btn-main-text: ").concat(isDark ? '#000000' : '#ffffff', ";\n  --mmp-btn-sec-bg: ").concat(isDark ? '#2c2c2e' : '#ffffff', ";\n  --mmp-btn-sec-text: ").concat(isDark ? '#f5f5f7' : '#1d1d1f', ";\n  --mmp-btn-sec-border: ").concat(isDark ? '#3a3a3c' : '#e5e5ea', ";\n  --mmp-detail-bg: ").concat(isDark ? '#2c2c2e' : '#f9f9fb', ";\n  --mmp-toggle-bg: ").concat(isDark ? '#2c2c2e' : '#f5f5f7', ";\n  --mmp-toggle-btn-active: ").concat(isDark ? '#636366' : '#ffffff', ";\n  --mmp-toggle-btn-text: ").concat(isDark ? '#ffffff' : '#1d1d1f', ";\n  --mmp-progress-track: ").concat(isDark ? '#2c2c2e' : '#f1f5f9', ";\n  --mmp-progress-ind: ").concat(isDark ? 'linear-gradient(90deg, transparent, #ffffff, transparent)' : 'linear-gradient(90deg, transparent, #0f172a, transparent)', ";\n  --mmp-success-bg: ").concat(isDark ? 'rgba(52, 199, 89, 0.2)' : '#e8f8ec', ";\n  --mmp-fail-bg: ").concat(isDark ? 'rgba(255, 59, 48, 0.2)' : '#fce8e6', ";\n  --mmp-warn-bg: ").concat(isDark ? 'rgba(255, 149, 0, 0.2)' : '#fff4e5', ";\n  --mmp-close-btn-hover: ").concat(isDark ? '#3a3a3c' : '#e5e5ea', ";\n\n  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;\n  background-color: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);\n  z-index: 99999; display: flex; align-items: center; justify-content: center;\n  transition: opacity 0.2s ease; box-sizing: border-box; padding: 16px;\n  font-family: -apple-system, BlinkMacSystemFont, \"SF Pro Text\", \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif, 'Padauk';\n}\n.mmpay-lang-en .mm-text { display: none !important; }\n.mmpay-lang-mm .en-text { display: none !important; }\n.mmpay-toggle-container {\n  position: absolute; top: 16px; left: 16px; display: flex; background: var(--mmp-toggle-bg);\n  border-radius: 10px; padding: 3px; z-index: 10; border: 1px solid var(--mmp-border);\n}\n.mmpay-toggle-btn {\n  font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 0.75rem; font-weight: 600;\n  padding: 5px 10px; border-radius: 8px; cursor: pointer; color: var(--mmp-text-sub); border: none; background: transparent; transition: all 0.2s ease;\n}\n.mmpay-lang-en .btn-en, .mmpay-lang-mm .btn-mm { background: var(--mmp-toggle-btn-active); color: var(--mmp-toggle-btn-text); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }\n.mmpay-overlay-content { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }\n.mmpay-card {\n  background: var(--mmp-card-bg); backdrop-filter: var(--mmp-card-backdrop); -webkit-backdrop-filter: var(--mmp-card-backdrop);\n  border-radius: 24px; box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12), 0 0 0 1px var(--mmp-border);\n  text-align: center; animation: mmpayFadeIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); box-sizing: border-box;\n  position: relative; width: 100%; max-width: 360px; overflow: hidden; display: flex; flex-direction: column;\n}\n@keyframes mmpayFadeIn { from { opacity: 0; transform: translateY(20px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }\n.mmpay-close-btn {\n  position: absolute; top: 16px; right: 16px; background: var(--mmp-toggle-bg); border: none; cursor: pointer; padding: 0;\n  color: var(--mmp-text-sub); border-radius: 50%; transition: all 0.2s ease; z-index: 10; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;\n}\n.mmpay-close-btn:hover { background-color: var(--mmp-close-btn-hover); color: var(--mmp-text-main); }\n.mmpay-button {\n  background: var(--mmp-btn-main-bg); color: var(--mmp-btn-main-text); border: none; padding: 14px 20px; border-radius: 14px;\n  font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 10px; transition: all 0.2s ease; width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n}\n.mmpay-button:hover { filter: brightness(1.1); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2); }\n.mmpay-button:active { transform: scale(0.98); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }\n.mmpay-button-secondary { background: var(--mmp-btn-sec-bg); color: var(--mmp-btn-sec-text); border: 1px solid var(--mmp-btn-sec-border); box-shadow: none; }\n.mmpay-button-secondary:hover { background: var(--mmp-toggle-bg); box-shadow: none;}\n.mmpay-button-danger { background: var(--mmp-fail-bg); color: #ff3b30; box-shadow: none; }\n.mmpay-button-danger:hover { filter: brightness(0.95); box-shadow: none;}\n");
+    return "\n@import url('https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&display=swap');\n#mmpay-full-modal {\n  --mmp-card-bg: ".concat(cardBg, ";\n  --mmp-card-backdrop: ").concat(backdrop, ";\n  --mmp-text-main: ").concat(isDark ? '#f5f5f7' : '#1d1d1f', ";\n  --mmp-text-sub: ").concat(isDark ? 'rgba(235, 235, 245, 0.6)' : '#86868b', ";\n  --mmp-border: ").concat(isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)', ";\n  --mmp-btn-main-bg: ").concat(isDark ? '#ffffff' : '#3a3a3c', ";\n  --mmp-btn-main-text: ").concat(isDark ? '#000000' : '#ffffff', ";\n  --mmp-btn-sec-bg: ").concat(isDark ? '#2c2c2e' : '#ffffff', ";\n  --mmp-btn-sec-text: ").concat(isDark ? '#f5f5f7' : '#1d1d1f', ";\n  --mmp-btn-sec-border: ").concat(isDark ? '#3a3a3c' : '#e5e5ea', ";\n  --mmp-detail-bg: ").concat(isDark ? '#2c2c2e' : '#f9f9fb', ";\n  --mmp-toggle-bg: ").concat(isDark ? '#2c2c2e' : '#f5f5f7', ";\n  --mmp-toggle-btn-active: ").concat(isDark ? '#636366' : '#ffffff', ";\n  --mmp-toggle-btn-text: ").concat(isDark ? '#ffffff' : '#1d1d1f', ";\n  --mmp-progress-track: ").concat(isDark ? '#2c2c2e' : '#f1f5f9', ";\n  --mmp-progress-ind: ").concat(isDark ? 'linear-gradient(90deg, transparent, #ffffff, transparent)' : 'linear-gradient(90deg, transparent, #0f172a, transparent)', ";\n  --mmp-success-bg: ").concat(isDark ? 'rgba(52, 199, 89, 0.2)' : '#e8f8ec', ";\n  --mmp-fail-bg: ").concat(isDark ? 'rgba(255, 59, 48, 0.2)' : '#fce8e6', ";\n  --mmp-warn-bg: ").concat(isDark ? 'rgba(255, 149, 0, 0.2)' : '#fff4e5', ";\n  --mmp-close-btn-hover: ").concat(isDark ? '#3a3a3c' : '#e5e5ea', ";\n  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;\n  background-color: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);\n  z-index: 99999; display: flex; align-items: center; justify-content: center;\n  transition: opacity 0.2s ease; box-sizing: border-box; padding: 16px;\n  font-family: -apple-system, BlinkMacSystemFont, \"SF Pro Text\", \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif, 'Padauk';\n}\n.mmpay-lang-en .mm-text { display: none !important; }\n.mmpay-lang-mm .en-text { display: none !important; }\n.mmpay-toggle-container {\n  position: absolute; top: 16px; left: 16px; display: flex; background: var(--mmp-toggle-bg);\n  border-radius: 10px; padding: 3px; z-index: 10; border: 1px solid var(--mmp-border);\n}\n.mmpay-toggle-btn {\n  font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 0.75rem; font-weight: 600;\n  padding: 5px 10px; border-radius: 8px; cursor: pointer; color: var(--mmp-text-sub); border: none; background: transparent; transition: all 0.2s ease;\n}\n.mmpay-lang-en .btn-en, .mmpay-lang-mm .btn-mm { background: var(--mmp-toggle-btn-active); color: var(--mmp-toggle-btn-text); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }\n.mmpay-overlay-content { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }\n.mmpay-card {\n  background: var(--mmp-card-bg); backdrop-filter: var(--mmp-card-backdrop); -webkit-backdrop-filter: var(--mmp-card-backdrop);\n  border-radius: 24px; box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12), 0 0 0 1px var(--mmp-border);\n  text-align: center; animation: mmpayFadeIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); box-sizing: border-box;\n  position: relative; width: 100%; max-width: 360px; overflow: hidden; display: flex; flex-direction: column;\n}\n@keyframes mmpayFadeIn { from { opacity: 0; transform: translateY(20px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }\n.mmpay-close-btn {\n  position: absolute; top: 16px; right: 16px; background: var(--mmp-toggle-bg); border: none; cursor: pointer; padding: 0;\n  color: var(--mmp-text-sub); border-radius: 50%; transition: all 0.2s ease; z-index: 10; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;\n}\n.mmpay-close-btn:hover { background-color: var(--mmp-close-btn-hover); color: var(--mmp-text-main); }\n.mmpay-button {\n  background: var(--mmp-btn-main-bg); color: var(--mmp-btn-main-text); border: none; padding: 14px 20px; border-radius: 14px;\n  font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 10px; transition: all 0.2s ease; width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n}\n.mmpay-button:hover { filter: brightness(1.1); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2); }\n.mmpay-button:active { transform: scale(0.98); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }\n.mmpay-button-secondary { background: var(--mmp-btn-sec-bg); color: var(--mmp-btn-sec-text); border: 1px solid var(--mmp-btn-sec-border); box-shadow: none; }\n.mmpay-button-secondary:hover { background: var(--mmp-toggle-bg); box-shadow: none;}\n.mmpay-button-danger { background: var(--mmp-fail-bg); color: #ff3b30; box-shadow: none; }\n.mmpay-button-danger:hover { filter: brightness(0.95); box-shadow: none;}\n");
 }
 function _getContentQRDisplay(qrContainerId, merchantName, formattedAmount, apiResponse, design) {
     var customBtnStyle = '';
     if (design === null || design === void 0 ? void 0 : design.color) {
         customBtnStyle = "style=\"background-color: ".concat(design.color, " !important; color: #ffffff !important;\"");
     }
-    return "\n      <style>\n        .mmpay-qr-view { padding: 64px 20px 24px 20px; box-sizing: border-box; width: 100%; display: flex; flex-direction: column; justify-content: center; }\n        .mmpay-header { color: var(--mmp-text-sub); font-size: 1rem; font-weight: 500; margin-bottom: 6px; }\n        .mmpay-amount-wrapper { margin: 0 auto 16px auto; display: flex; align-items: baseline; justify-content: center; gap: 6px; }\n        .mmpay-amount-value { font-size: 1.85rem; font-weight: 700; color: var(--mmp-text-main); letter-spacing: -0.5px; line-height: 1; }\n        .mmpay-amount-currency { font-size: 0.95rem; font-weight: 600; color: var(--mmp-text-sub); text-transform: uppercase; letter-spacing: 0.5px; }\n        .mmpay-qr-container { width: 220px; height: 220px; padding: 12px; margin: 0 auto; display: flex; justify-content: center; align-items: center; background: #ffffff; border-radius: 16px; border: 1px solid var(--mmp-border); box-shadow: 0 8px 24px rgba(0,0,0,0.04); box-sizing: border-box; overflow: hidden; }\n        #".concat(qrContainerId, " { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }\n        #").concat(qrContainerId, " canvas, #").concat(qrContainerId, " img { max-width: 100%; max-height: 100%; object-fit: contain; }\n        .mmpay-powered-text { font-size: 0.75rem; color: var(--mmp-text-sub); font-weight: 500; margin: 12px auto 8px auto;}\n        .mmpay-detail-box { background: var(--mmp-detail-bg); border-radius: 14px; padding: 14px 16px; margin-bottom: 20px; border: 1px solid var(--mmp-border); }\n        .mmpay-detail { font-size: 0.85rem; color: var(--mmp-text-sub); margin: 6px 0; display: flex; justify-content: space-between; align-items: center; }\n        .mmpay-detail strong { color: var(--mmp-text-main); font-weight: 600; text-align: right; }\n        .mmpay-detail span { text-align: left; }\n        .mmpay-timer-badge { color: #d93025; background: var(--mmp-fail-bg); padding: 5px 12px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin: 0 auto 16px auto; }\n        .mmpay-timer-icon { width: 14px; height: 14px; fill: currentColor; }\n      </style>\n      <div class=\"mmpay-card mmpay-qr-view\">\n          <div class=\"mmpay-toggle-container\">\n              <button class=\"mmpay-toggle-btn btn-en\" onclick=\"MMPayToggleLang('en')\">EN</button>\n              <button class=\"mmpay-toggle-btn btn-mm\" onclick=\"MMPayToggleLang('mm')\">MM</button>\n          </div>\n          <button class=\"mmpay-close-btn\" onclick=\"MMPayCloseModal(false)\">\n              <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"2.5\">\n                  <path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M6 18L18 6M6 6l12 12\"/>\n              </svg>\n          </button>\n          <div style=\"margin: 0 auto 16px auto; display: flex; align-items: center; justify-content: center;\">\n            <img src=\"https://motephoe.com/images/mmqr.webp\" alt=\"MyanMyanPay Logo\" style=\"height: 40px; width: auto; object-fit: contain;\">\n          </div>\n          <div class=\"mmpay-header\">").concat(merchantName, "</div>\n          <div class=\"mmpay-amount-wrapper\">\n              <span class=\"mmpay-amount-value\">").concat(formattedAmount, "</span>\n              <span class=\"mmpay-amount-currency\">MMK</span>\n          </div>\n          <div class=\"mmpay-qr-container\">\n              <div id=\"").concat(qrContainerId, "\"></div>\n          </div>\n          <div class=\"mmpay-powered-text\">\n              <span class=\"en-text\">Payment powered by MyanMyanPay</span>\n              <span class=\"mm-text\">MyanMyanPay \u1016\u103C\u1004\u1037\u103A \u1004\u103D\u1031\u1015\u1031\u1038\u1001\u103B\u1031\u1019\u103E\u102F\u1000\u102D\u102F \u1011\u1031\u102C\u1000\u103A\u1015\u1036\u1037\u1011\u102C\u1038\u101E\u100A\u103A</span>\n          </div>\n          <div class=\"mmpay-timer-badge\" id=\"mmpay-timer-badge\">\n             <svg class=\"mmpay-timer-icon\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\">\n               <path d=\"M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z\"/>\n               <path d=\"M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z\"/>\n             </svg>\n             <span id=\"mmpay-countdown-text\">05:00</span>\n          </div>\n          <div class=\"mmpay-detail-box\">\n              <div class=\"mmpay-detail\">\n                  <span><span class=\"en-text\">Order ID</span><span class=\"mm-text\">\u1019\u103E\u102C\u101A\u1030\u1019\u103E\u102F\u1014\u1036\u1015\u102B\u1010\u103A</span></span>\n                  <strong>").concat(apiResponse.orderId, "</strong>\n              </div>\n              <div class=\"mmpay-detail\" style=\"margin-top: 8px;\">\n                  <span><span class=\"en-text\">MMQR Ref No</span><span class=\"mm-text\">\u1004\u103D\u1031\u1015\u1031\u1038\u1004\u103D\u1031\u101A\u1030\u1014\u1036\u1015\u102B\u1010\u103A</span></span>\n                  <strong>").concat(apiResponse.vendorQrRefId, "</strong>\n              </div>\n          </div>\n          <button class=\"mmpay-button\" ").concat(customBtnStyle, " onclick=\"MMPayDownloadQR()\">\n              <span class=\"en-text\">Download QR Code</span>\n              <span class=\"mm-text\">QR \u1000\u102F\u1012\u103A\u1000\u102D\u102F \u101E\u102D\u1019\u103A\u1038\u1006\u100A\u103A\u1038\u1019\u100A\u103A</span>\n          </button>\n      </div>\n    ");
+    return "\n      <style>\n        .mmpay-qr-view { padding: 64px 20px 24px 20px; box-sizing: border-box; width: 100%; display: flex; flex-direction: column; justify-content: center; }\n        .mmpay-header { color: var(--mmp-text-sub); font-size: 1rem; font-weight: 500; margin-bottom: 6px; }\n        .mmpay-amount-wrapper { margin: 0 auto 16px auto; display: flex; align-items: baseline; justify-content: center; gap: 6px; }\n        .mmpay-amount-value { font-size: 1.85rem; font-weight: 700; color: var(--mmp-text-main); letter-spacing: -0.5px; line-height: 1; }\n        .mmpay-amount-currency { font-size: 0.95rem; font-weight: 600; color: var(--mmp-text-sub); text-transform: uppercase; letter-spacing: 0.5px; }\n        .mmpay-qr-container { width: 220px; height: 220px; padding: 12px; margin: 0 auto; display: flex; justify-content: center; align-items: center; background: #ffffff; border-radius: 16px; border: 1px solid var(--mmp-border); box-shadow: 0 8px 24px rgba(0,0,0,0.04); box-sizing: border-box; overflow: hidden; }\n        #".concat(qrContainerId, " { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }\n        #").concat(qrContainerId, " canvas, #").concat(qrContainerId, " img { max-width: 100%; max-height: 100%; object-fit: contain; }\n        .mmpay-powered-text { font-size: 0.75rem; color: var(--mmp-text-sub); font-weight: 500; margin: 12px auto 8px auto;}\n        .mmpay-detail-box { background: var(--mmp-detail-bg); border-radius: 14px; padding: 14px 16px; margin-bottom: 20px; border: 1px solid var(--mmp-border); }\n        .mmpay-detail { font-size: 0.85rem; color: var(--mmp-text-sub); margin: 6px 0; display: flex; justify-content: space-between; align-items: center; }\n        .mmpay-detail strong { color: var(--mmp-text-main); font-weight: 600; text-align: right; }\n        .mmpay-detail span { text-align: left; }\n        .mmpay-timer-badge { color: #d93025; background: var(--mmp-fail-bg); padding: 5px 12px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin: 0 auto 16px auto; }\n        .mmpay-timer-icon { width: 14px; height: 14px; fill: currentColor; }\n      </style>\n      <div class=\"mmpay-card mmpay-qr-view\">\n          <div class=\"mmpay-toggle-container\">\n              <button class=\"mmpay-toggle-btn btn-en\" onclick=\"MMPayToggleLang('en')\">EN</button>\n              <button class=\"mmpay-toggle-btn btn-mm\" onclick=\"MMPayToggleLang('mm')\">MM</button>\n          </div>\n          <button class=\"mmpay-close-btn\" onclick=\"MMPayCloseModal(false)\">\n              <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"2.5\">\n                  <path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M6 18L18 6M6 6l12 12\"/>\n              </svg>\n          </button>\n          <div style=\"margin: 0 auto 16px auto; display: flex; align-items: center; justify-content: center;\">\n            <img src=\"https://motephoe.com/images/mmqr.webp\" alt=\"MyanMyanPay Logo\" style=\"height: 40px; width: auto; object-fit: contain;\">\n          </div>\n          <div class=\"mmpay-header\">").concat(merchantName, "</div>\n          <div class=\"mmpay-amount-wrapper\">\n              <span class=\"mmpay-amount-value\">").concat(formattedAmount, "</span>\n              <span class=\"mmpay-amount-currency\">MMK</span>\n          </div>\n          <div class=\"mmpay-qr-container\">\n              <div id=\"").concat(qrContainerId, "\"></div>\n          </div>\n          <div class=\"mmpay-powered-text\">\n              <span class=\"en-text\">Payment powered by MyanMyanPay</span>\n              <span class=\"mm-text\">MyanMyanPay \u1016\u103C\u1004\u1037\u103A \u1015\u1031\u1038\u1001\u103B\u1031\u1015\u102B</span>\n          </div>\n          <div class=\"mmpay-timer-badge\" id=\"mmpay-timer-badge\">\n             <svg class=\"mmpay-timer-icon\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\">\n               <path d=\"M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z\"/>\n               <path d=\"M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z\"/>\n             </svg>\n             <span id=\"mmpay-countdown-text\">05:00</span>\n          </div>\n          <div class=\"mmpay-detail-box\">\n              <div class=\"mmpay-detail\">\n                  <span><span class=\"en-text\">Order ID</span><span class=\"mm-text\">\u1021\u1031\u102C\u103A\u1012\u102B\u1014\u1036\u1015\u102B\u1010\u103A</span></span>\n                  <strong>").concat(apiResponse.orderId, "</strong>\n              </div>\n              <div class=\"mmpay-detail\" style=\"margin-top: 8px;\">\n                  <span><span class=\"en-text\">MMQR Ref No</span><span class=\"mm-text\">\u101B\u100A\u103A\u100A\u103D\u103E\u1014\u103A\u1038\u1014\u1036\u1015\u102B\u1010\u103A</span></span>\n                  <strong>").concat(apiResponse.vendorQrRefId, "</strong>\n              </div>\n          </div>\n          <button class=\"mmpay-button\" ").concat(customBtnStyle, " onclick=\"MMPayDownloadQR()\">\n              <span class=\"en-text\">Download QR Code</span>\n              <span class=\"mm-text\">QR \u1012\u1031\u102B\u1004\u103A\u1038\u101C\u102F\u1012\u103A\u101C\u102F\u1015\u103A\u1019\u100A\u103A</span>\n          </button>\n      </div>\n    ");
 }
 function _getContentAfterModal(status, orderId, messageHtml, design) {
     var isSuccess = status === 'SUCCESS';
@@ -328,13 +331,13 @@ function _getContentAfterModal(status, orderId, messageHtml, design) {
     }
     else {
         statusTextEn = status === 'EXPIRED' ? 'Expired' : 'Failed';
-        statusTextMm = status === 'EXPIRED' ? 'အချိန်ကျော်လွန်သွားပါပြီ' : 'မအောင်မြင်ပါ';
+        statusTextMm = status === 'EXPIRED' ? 'သက်တမ်းကုန်သွားပါပြီ' : 'မအောင်မြင်ပါ';
         iconSvg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"36\" height=\"36\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"".concat(iconColor, "\" stroke-width=\"3\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M6 18L18 6M6 6l12 12\" /></svg>");
     }
     return "\n<div class=\"mmpay-card\" style=\"padding: 64px 24px 32px 24px; box-sizing: border-box; width: 100%;\">\n    <div class=\"mmpay-toggle-container\">\n        <button class=\"mmpay-toggle-btn btn-en\" onclick=\"MMPayToggleLang('en')\">EN</button>\n        <button class=\"mmpay-toggle-btn btn-mm\" onclick=\"MMPayToggleLang('mm')\">MM</button>\n    </div>\n    <div style=\"margin: 0 auto 24px auto; width: 72px; height: 72px; border-radius: 50%; background: ".concat(iconBgVar, "; display: flex; align-items: center; justify-content: center;\">\n        ").concat(iconSvg, "\n    </div>\n    <h2 style=\"font-size: 1.4rem; font-weight: 700; color: var(--mmp-text-main); margin: 0 0 10px 0;\">\n        <span class=\"en-text\">").concat(statusTextEn, "</span>\n        <span class=\"mm-text\">").concat(statusTextMm, "</span>\n    </h2>\n    <div style=\"background: var(--mmp-detail-bg); padding: 8px 14px; border-radius: 10px; border: 1px solid var(--mmp-border); display: inline-block; margin-bottom: 24px;\">\n        <p style=\"color: var(--mmp-text-sub); font-size: 0.85rem; margin: 0; font-weight: 600;\">ID: ").concat(orderId, "</p>\n    </div>\n    <p style=\"color: var(--mmp-text-sub); margin-top: 0; margin-bottom: 32px; font-size: 0.95rem; line-height: 1.5;\">\n        ").concat(messageHtml, "\n    </p>\n    <button class=\"mmpay-button\" onclick=\"MMPayCloseModal(true)\">\n        <span class=\"en-text\">Close</span>\n        <span class=\"mm-text\">\u1015\u102D\u1010\u103A\u1019\u100A\u103A</span>\n    </button>\n</div>");
 }
 function _getPreloadScreen(design) {
-    return "\n      <style>\n        @keyframes mmpayGodSweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }\n        @keyframes mmpayPulseSoft { 0%, 100% { opacity: 0.9; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); filter: drop-shadow(0 8px 16px rgba(0,0,0,0.06)); } }\n        .mmpay-preload-wrapper { padding: 56px 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 290px; }\n        .mmpay-brand-core { position: relative; margin-bottom: 40px; display: flex; align-items: center; justify-content: center; }\n        .mmpay-loader-img { width: 65px; height: auto; position: relative; z-index: 2; animation: mmpayPulseSoft 2.5s ease-in-out infinite; }\n        .mmpay-progress-track { width: 160px; height: 2px; background: var(--mmp-progress-track); border-radius: 2px; overflow: hidden; position: relative; margin-bottom: 24px; }\n        .mmpay-progress-indicator { position: absolute; top: 0; left: 0; bottom: 0; width: 40%; background: var(--mmp-progress-ind); animation: mmpayGodSweep 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite; }\n        .mmpay-preload-text { font-size: 0.85rem; font-weight: 700; color: var(--mmp-text-main); letter-spacing: 1px; text-transform: uppercase; }\n        .mmpay-preload-subtext { font-size: 0.8rem; color: var(--mmp-text-sub); margin-top: 6px; font-weight: 500; }\n      </style>\n      <div class=\"mmpay-card mmpay-preload-wrapper\">\n          <div class=\"mmpay-brand-core\">\n              <img src=\"https://myanmyanpay.com/_next/image?url=%2Fmmp-logo.png&w=1920&q=75\" alt=\"MMPay\" class=\"mmpay-loader-img\" />\n          </div>\n          <div class=\"mmpay-progress-track\">\n              <div class=\"mmpay-progress-indicator\"></div>\n          </div>\n          <div class=\"mmpay-preload-text\">\n              <span class=\"en-text\">Securing Transaction</span>\n              <span class=\"mm-text\">\u101C\u102F\u1036\u1001\u103C\u102F\u1036\u101E\u1031\u102C \u1001\u103B\u102D\u1010\u103A\u1006\u1000\u103A\u1019\u103E\u102F</span>\n          </div>\n          <div class=\"mmpay-preload-subtext\">\n              <span class=\"en-text\">Establishing end-to-end encryption...</span>\n              <span class=\"mm-text\">\u101C\u102F\u1036\u1001\u103C\u102F\u1036\u101B\u1031\u1038\u1005\u1014\u1005\u103A\u1019\u103B\u102C\u1038\u1000\u102D\u102F \u1001\u103B\u102D\u1010\u103A\u1006\u1000\u103A\u1014\u1031\u101E\u100A\u103A...</span>\n          </div>\n      </div>";
+    return "\n      <style>\n        @keyframes mmpayGodSweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }\n        @keyframes mmpayPulseSoft { 0%, 100% { opacity: 0.9; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); filter: drop-shadow(0 8px 16px rgba(0,0,0,0.06)); } }\n        .mmpay-preload-wrapper { padding: 56px 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 290px; }\n        .mmpay-brand-core { position: relative; margin-bottom: 40px; display: flex; align-items: center; justify-content: center; }\n        .mmpay-loader-img { width: 65px; height: auto; position: relative; z-index: 2; animation: mmpayPulseSoft 2.5s ease-in-out infinite; }\n        .mmpay-progress-track { width: 160px; height: 2px; background: var(--mmp-progress-track); border-radius: 2px; overflow: hidden; position: relative; margin-bottom: 24px; }\n        .mmpay-progress-indicator { position: absolute; top: 0; left: 0; bottom: 0; width: 40%; background: var(--mmp-progress-ind); animation: mmpayGodSweep 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite; }\n        .mmpay-preload-text { font-size: 0.85rem; font-weight: 700; color: var(--mmp-text-main); letter-spacing: 1px; text-transform: uppercase; }\n        .mmpay-preload-subtext { font-size: 0.8rem; color: var(--mmp-text-sub); margin-top: 6px; font-weight: 500; }\n      </style>\n      <div class=\"mmpay-card mmpay-preload-wrapper\">\n          <div class=\"mmpay-brand-core\">\n              <img src=\"https://myanmyanpay.com/_next/image?url=%2Fmmp-logo.png&w=1920&q=75\" alt=\"MMPay\" class=\"mmpay-loader-img\" />\n          </div>\n          <div class=\"mmpay-progress-track\">\n              <div class=\"mmpay-progress-indicator\"></div>\n          </div>\n          <div class=\"mmpay-preload-text\">\n              <span class=\"en-text\">Securing Transaction</span>\n              <span class=\"mm-text\">\u1001\u103B\u102D\u1010\u103A\u1006\u1000\u103A\u1014\u1031\u1015\u102B\u101E\u100A\u103A</span>\n          </div>\n          <div class=\"mmpay-preload-subtext\">\n              <span class=\"en-text\">Establishing end-to-end encryption...</span>\n              <span class=\"mm-text\">\u101C\u102F\u1036\u1001\u103C\u102F\u1036\u101B\u1031\u1038 \u1005\u1014\u1005\u103A\u1016\u103C\u1004\u1037\u103A \u1001\u103B\u102D\u1010\u103A\u1006\u1000\u103A\u1014\u1031\u1015\u102B\u101E\u100A\u103A...</span>\n          </div>\n      </div>";
 }
 
 var MMPayUI = /** @class */ (function () {
@@ -526,7 +529,6 @@ var MMPaySDK = /** @class */ (function () {
         var baseUrl = options.baseUrl || 'https://browser-engine-production.up.railway.app';
         this.merchantName = options.merchantName || 'MyanMyanPay';
         this.POLL_INTERVAL_MS = options.pollInterval || 5000;
-        // Standard Core Injections
         this.api = new MMPayAPI(baseUrl, this.environment, publishableKey);
         this.ui = new MMPayUI({
             mode: ((_a = options.design) === null || _a === void 0 ? void 0 : _a.mode) || 'light',
@@ -537,9 +539,6 @@ var MMPaySDK = /** @class */ (function () {
             this._checkAndAutoResume();
         }
     }
-    /**
-     * Backward-Compatible UI Trigger
-     */
     MMPaySDK.prototype.showPaymentModal = function (params, onComplete) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
@@ -550,9 +549,6 @@ var MMPaySDK = /** @class */ (function () {
             });
         });
     };
-    /**
-     * Modern Tokenized Payload Flow
-     */
     MMPaySDK.prototype.pay = function (orderId, onComplete) {
         return __awaiter(this, void 0, void 0, function () {
             var cachedData, parsed, showPayload, expireAt, startTime, tokenNonce, tokenResponse, apiResponse, elapsed_1, status_1, actualRefId, terminalStatus, terminalMsg, mappedPaymentResponse, mappedPaymentPayload, error_1, terminalMsg;
@@ -627,8 +623,9 @@ var MMPaySDK = /** @class */ (function () {
                                     failed: status_1 === 'FAILED',
                                     expired: status_1 === 'EXPIRED',
                                     cancelled: status_1 === 'CANCELLED',
+                                    amount: apiResponse.amount,
                                     orderId: apiResponse.orderId || orderId,
-                                    vendorQrRefId: actualRefId
+                                    vendorQrRefId: actualRefId,
                                 });
                                 return [2 /*return*/];
                             }
@@ -652,14 +649,16 @@ var MMPaySDK = /** @class */ (function () {
                         this.api.setToken(null);
                         terminalMsg = "<span class=\"en-text\">".concat((error_1 === null || error_1 === void 0 ? void 0 : error_1.message) || 'Error occurred.', "</span>");
                         this.ui.showTerminalMessage(orderId || 'N/A', 'FAILED', terminalMsg, this._getGlobalHandlers(true));
-                        this._triggerEvent({ failed: true, orderId: orderId });
+                        this._triggerEvent({
+                            failed: true,
+                            orderId: orderId,
+                        });
                         return [3 /*break*/, 7];
                     case 7: return [2 /*return*/];
                 }
             });
         });
     };
-    // --- Protected Infrastructure Mappers ---
     MMPaySDK.prototype._getGlobalHandlers = function (isTerminal) {
         var _this = this;
         if (isTerminal === void 0) { isTerminal = false; }
@@ -691,7 +690,11 @@ var MMPaySDK = /** @class */ (function () {
                                     })];
                             case 2:
                                 _a.sent();
-                                this._triggerEvent({ cancelled: true, orderId: this.pendingPaymentPayload.orderId });
+                                this._triggerEvent({
+                                    cancelled: true,
+                                    orderId: this.pendingPaymentPayload.orderId,
+                                    amount: this.pendingPaymentPayload.amount
+                                });
                                 return [3 /*break*/, 4];
                             case 3:
                                 _a.sent();
@@ -733,7 +736,9 @@ var MMPaySDK = /** @class */ (function () {
         }
         this.ui.cleanupModal(true);
     };
-    MMPaySDK.prototype._clearCache = function () { localStorage.removeItem(this.CACHE_KEY); };
+    MMPaySDK.prototype._clearCache = function () {
+        localStorage.removeItem(this.CACHE_KEY);
+    };
     MMPaySDK.prototype._checkAndAutoResume = function () {
         var cachedData = localStorage.getItem(this.CACHE_KEY);
         if (!cachedData)
@@ -759,7 +764,12 @@ var MMPaySDK = /** @class */ (function () {
         this.ui.renderQrModalContent(apiResponse, payload.orderId, this.merchantName, this._getGlobalHandlers());
         this._startPolling(payload);
         this._startCountdown(payload.orderId, expireAt);
-        this._triggerEvent({ created: true, orderId: payload.orderId, vendorQrRefId: actualRefId });
+        this._triggerEvent({
+            created: true,
+            orderId: payload.orderId,
+            amount: payload.amount,
+            vendorQrRefId: actualRefId
+        });
     };
     MMPaySDK.prototype._startPolling = function (payload) {
         return __awaiter(this, void 0, void 0, function () {
@@ -769,16 +779,18 @@ var MMPaySDK = /** @class */ (function () {
                 if (this.pollIntervalId !== undefined)
                     window.clearInterval(this.pollIntervalId);
                 checkStatus = function () { return __awaiter(_this, void 0, void 0, function () {
-                    var response, status_2, actualRefId, messageHtml;
-                    return __generator(this, function (_a) {
-                        switch (_a.label) {
+                    var response, status_2, actualRefId, amountInfo, messageHtml;
+                    var _a;
+                    return __generator(this, function (_b) {
+                        switch (_b.label) {
                             case 0:
-                                _a.trys.push([0, 2, , 3]);
+                                _b.trys.push([0, 2, , 3]);
                                 return [4 /*yield*/, this.api.pollPayment(payload)];
                             case 1:
-                                response = _a.sent();
+                                response = _b.sent();
                                 status_2 = (response.status || '').toUpperCase();
                                 actualRefId = response.vendorQrRefId || response.transactionRefId;
+                                amountInfo = response.amount || ((_a = this.pendingPaymentPayload) === null || _a === void 0 ? void 0 : _a.amount);
                                 if (status_2 === 'SUCCESS' || status_2 === 'FAILED' || status_2 === 'EXPIRED' || status_2 === 'CANCELLED') {
                                     this._cleanup();
                                     this._clearCache();
@@ -799,13 +811,14 @@ var MMPaySDK = /** @class */ (function () {
                                         failed: status_2 === 'FAILED',
                                         expired: status_2 === 'EXPIRED',
                                         cancelled: status_2 === 'CANCELLED',
+                                        amount: amountInfo,
                                         orderId: response.orderId,
                                         vendorQrRefId: actualRefId
                                     });
                                 }
                                 return [3 /*break*/, 3];
                             case 2:
-                                _a.sent();
+                                _b.sent();
                                 return [3 /*break*/, 3];
                             case 3: return [2 /*return*/];
                         }
@@ -833,13 +846,18 @@ var MMPaySDK = /** @class */ (function () {
         };
         var currentRemaining = updateDisplay();
         this.countdownIntervalId = window.setInterval(function () { return __awaiter(_this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
+            var _a;
+            return __generator(this, function (_b) {
                 currentRemaining = updateDisplay();
                 if (currentRemaining <= 0) {
                     this._cleanup();
                     this._clearCache();
                     this.ui.showTerminalMessage(orderId, 'EXPIRED', '<span class="en-text">Time expired.</span>', this._getGlobalHandlers(true));
-                    this._triggerEvent({ expired: true, orderId: orderId });
+                    this._triggerEvent({
+                        expired: true,
+                        orderId: orderId,
+                        amount: (_a = this.pendingPaymentPayload) === null || _a === void 0 ? void 0 : _a.amount
+                    });
                 }
                 return [2 /*return*/];
             });

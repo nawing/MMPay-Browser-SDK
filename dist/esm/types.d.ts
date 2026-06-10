@@ -61,6 +61,7 @@ export interface IPollingResponse {
     status: 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED' | 'CANCELLED' | 'EXPIRED';
     vendorQrRefId?: string;
     orderId?: string;
+    amount?: number;
 }
 export interface IModalEventResult {
     success?: boolean;
@@ -69,5 +70,6 @@ export interface IModalEventResult {
     expired?: boolean;
     failed?: boolean;
     orderId?: string;
+    amount?: number;
     vendorQrRefId?: string;
 }

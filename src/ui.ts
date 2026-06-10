@@ -22,7 +22,6 @@ export class MMPayUI {
 
   public createAndRenderModal(contentHtml: string, bindHandlers: any): HTMLDivElement {
     this.cleanupModal(false);
-
     const overlay = document.createElement('div');
     overlay.id = 'mmpay-full-modal';
     overlay.className = 'mmpay-lang-en';
@@ -37,7 +36,6 @@ export class MMPayUI {
 
     overlay.innerHTML += `<div class="mmpay-overlay-content">${contentHtml}</div>`;
     document.body.style.overflow = 'hidden';
-
     return overlay;
   }
 
@@ -89,6 +87,7 @@ export class MMPayUI {
     if (cancelView) {
       cancelView.style.display = 'none';
     }
+
     const overlayContent = this.overlayElement?.querySelector('.mmpay-overlay-content');
     if (overlayContent) {
       const qrView = overlayContent.querySelector('.mmpay-qr-view') as HTMLElement;
@@ -115,8 +114,10 @@ export class MMPayUI {
   private handleQRDownload(qrContainerId: string, orderId: string): void {
     const container = document.getElementById(qrContainerId);
     if (!container) return;
+
     const canvas = container.querySelector('canvas');
     const img = container.querySelector('img');
+
     try {
       let dataURL = '';
       if (canvas) {
@@ -124,6 +125,7 @@ export class MMPayUI {
       } else if (img) {
         dataURL = img.src;
       }
+
       if (dataURL) {
         const link = document.createElement('a');
         link.href = dataURL;
@@ -140,10 +142,12 @@ export class MMPayUI {
     const initQR = () => {
       const container = document.getElementById(qrContainerId);
       if (!container) return;
+
       if (typeof (window as any).QRCode !== 'undefined' && typeof (window as any).QRCode.toCanvas === 'function') {
         container.innerHTML = '';
         const canvas = document.createElement('canvas');
         container.appendChild(canvas);
+
         (window as any).QRCode.toCanvas(canvas, qrData, {
           width: this.QR_SIZE,
           margin: 1,
@@ -174,13 +178,16 @@ export class MMPayUI {
 
     const loadNextCdn = () => {
       if (currentCdnIndex >= cdnUrls.length) return;
+
       const script = document.createElement('script');
       script.src = cdnUrls[currentCdnIndex];
+
       script.onload = () => setTimeout(initQR, 50);
       script.onerror = () => {
         currentCdnIndex++;
         loadNextCdn();
       };
+
       document.head.appendChild(script);
     };
 

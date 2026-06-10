@@ -1,4 +1,9 @@
-import {ICreatePaymentRequestParams, ICreatePaymentResponse, ICreateTokenRequestParams, ICreateTokenResponse} from '../types';
+import {
+  ICreatePaymentRequestParams,
+  ICreatePaymentResponse,
+  ICreateTokenRequestParams,
+  ICreateTokenResponse
+} from '../types';
 
 export class XMMPayAPI {
   private baseUrl = 'https://ezapi.myanmyanpay.com';
@@ -11,7 +16,9 @@ export class XMMPayAPI {
     this.publishableKey = publishableKey;
   }
 
-  public setToken(token: string | null): void {this.tokenKey = token;}
+  public setToken(token: string | null): void {
+    this.tokenKey = token;
+  }
 
   private async call<T>(endpoint: string, data: object = {}): Promise<T> {
     const headers: any = {
@@ -21,7 +28,9 @@ export class XMMPayAPI {
     if (this.tokenKey) headers['X-MMPay-Btoken'] = this.tokenKey;
 
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      method: 'POST', headers, body: JSON.stringify(data)
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data)
     });
 
     if (!response.ok) throw new Error(`Legacy API Error: ${await response.text()}`);

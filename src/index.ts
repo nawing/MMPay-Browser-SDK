@@ -26,7 +26,6 @@ export class MMPaySDK {
   private pendingApiResponse: any | null = null;
   private pendingPaymentPayload: any | null = null;
 
-  // Clean Infrastructure Dependencies
   protected api: MMPayAPI;
   protected xApi: XMMPayAPI | null = null;
   protected ui: MMPayUI;
@@ -48,7 +47,6 @@ export class MMPaySDK {
     this.merchantName = options.merchantName || 'MyanMyanPay';
     this.POLL_INTERVAL_MS = options.pollInterval || 5000;
 
-    // Standard Core Injections
     this.api = new MMPayAPI(baseUrl, this.environment, publishableKey);
     this.ui = new MMPayUI({
       mode: options.design?.mode || 'light',
@@ -62,9 +60,6 @@ export class MMPaySDK {
     }
   }
 
-  /**
-   * Backward-Compatible UI Trigger
-   */
   public async showPaymentModal(
     params: ICreatePaymentRequestParams,
     onComplete: (result: IModalEventResult) => void
@@ -75,12 +70,10 @@ export class MMPaySDK {
     return showPaymentModal.call(this, params, onComplete);
   }
 
-  /**
-   * Modern Tokenized Payload Flow
-   */
   public async pay(orderId: string, onComplete: (result: IModalEventResult) => void): Promise<void> {
     this.onCompleteCallback = onComplete;
     const cachedData = localStorage.getItem(this.CACHE_KEY);
+
     if (cachedData) {
       try {
         const parsed = JSON.parse(cachedData);
@@ -108,6 +101,7 @@ export class MMPaySDK {
 
       const apiResponse: any = await this.api.showPayment(showPayload);
       const elapsed = Date.now() - startTime;
+
       if (elapsed < 1500) await new Promise(resolve => setTimeout(resolve, 1500 - elapsed));
 
       if (apiResponse) {
@@ -133,13 +127,15 @@ export class MMPaySDK {
           }
 
           this.ui.showTerminalMessage(apiResponse.orderId || orderId, terminalStatus, terminalMsg, this._getGlobalHandlers(true));
+
           this._triggerEvent({
             success: status === 'SUCCESS',
             failed: status === 'FAILED',
             expired: status === 'EXPIRED',
             cancelled: status === 'CANCELLED',
+            amount: apiResponse.amount,
             orderId: apiResponse.orderId || orderId,
-            vendorQrRefId: actualRefId
+            vendorQrRefId: actualRefId,
           });
           return;
         }
@@ -155,6 +151,7 @@ export class MMPaySDK {
             token: this.api.getToken(),
             environment: this.environment
           }));
+
           this._resumePaymentState(mappedPaymentResponse, mappedPaymentPayload, expireAt);
           return;
         }
@@ -164,11 +161,13 @@ export class MMPaySDK {
       this.api.setToken(null);
       const terminalMsg = `<span class="en-text">${error?.message || 'Error occurred.'}</span>`;
       this.ui.showTerminalMessage(orderId || 'N/A', 'FAILED', terminalMsg, this._getGlobalHandlers(true));
-      this._triggerEvent({failed: true, orderId: orderId});
+      this._triggerEvent({
+        failed: true,
+        orderId: orderId,
+      });
     }
   }
 
-  // --- Protected Infrastructure Mappers ---
   protected _getGlobalHandlers(isTerminal: boolean = false) {
     return {
       MMPayToggleLang: (lang: string) => {
@@ -184,7 +183,11 @@ export class MMPaySDK {
                 orderId: this.pendingPaymentPayload.orderId,
                 nonce: new Date().getTime().toString() + '_cancel'
               });
-              this._triggerEvent({cancelled: true, orderId: this.pendingPaymentPayload.orderId});
+              this._triggerEvent({
+                cancelled: true,
+                orderId: this.pendingPaymentPayload.orderId,
+                amount: this.pendingPaymentPayload.amount
+              });
             } catch (e) { }
             this._clearCache();
           }
@@ -199,17 +202,27 @@ export class MMPaySDK {
 
   protected _triggerEvent(eventData: IModalEventResult): void {
     if (this.onCompleteCallback) {
-      try {this.onCompleteCallback(eventData);} catch (e) { }
+      try {
+        this.onCompleteCallback(eventData);
+      } catch (e) { }
     }
   }
 
   protected _cleanup(): void {
-    if (this.pollIntervalId !== undefined) {window.clearInterval(this.pollIntervalId); this.pollIntervalId = undefined;}
-    if (this.countdownIntervalId !== undefined) {window.clearInterval(this.countdownIntervalId); this.countdownIntervalId = undefined;}
+    if (this.pollIntervalId !== undefined) {
+      window.clearInterval(this.pollIntervalId);
+      this.pollIntervalId = undefined;
+    }
+    if (this.countdownIntervalId !== undefined) {
+      window.clearInterval(this.countdownIntervalId);
+      this.countdownIntervalId = undefined;
+    }
     this.ui.cleanupModal(true);
   }
 
-  protected _clearCache(): void {localStorage.removeItem(this.CACHE_KEY);}
+  protected _clearCache(): void {
+    localStorage.removeItem(this.CACHE_KEY);
+  }
 
   private _checkAndAutoResume(): void {
     const cachedData = localStorage.getItem(this.CACHE_KEY);
@@ -237,16 +250,23 @@ export class MMPaySDK {
     this._startPolling(payload);
     this._startCountdown(payload.orderId, expireAt);
 
-    this._triggerEvent({created: true, orderId: payload.orderId, vendorQrRefId: actualRefId});
+    this._triggerEvent({
+      created: true,
+      orderId: payload.orderId,
+      amount: payload.amount,
+      vendorQrRefId: actualRefId
+    });
   }
 
   protected async _startPolling(payload: IPollingRequest): Promise<void> {
     if (this.pollIntervalId !== undefined) window.clearInterval(this.pollIntervalId);
+
     const checkStatus = async () => {
       try {
         const response: any = await this.api.pollPayment(payload);
         const status = (response.status || '').toUpperCase();
         const actualRefId = response.vendorQrRefId || response.transactionRefId;
+        const amountInfo = response.amount || this.pendingPaymentPayload?.amount;
 
         if (status === 'SUCCESS' || status === 'FAILED' || status === 'EXPIRED' || status === 'CANCELLED') {
           this._cleanup();
@@ -263,23 +283,27 @@ export class MMPaySDK {
 
           this.ui.showTerminalMessage(response.orderId || 'N/A', status as any, messageHtml, this._getGlobalHandlers(true));
           this.api.setToken(null);
+
           this._triggerEvent({
             success: status === 'SUCCESS',
             failed: status === 'FAILED',
             expired: status === 'EXPIRED',
             cancelled: status === 'CANCELLED',
+            amount: amountInfo,
             orderId: response.orderId,
             vendorQrRefId: actualRefId
           });
         }
       } catch (error) { }
     };
+
     checkStatus();
     this.pollIntervalId = window.setInterval(checkStatus, this.POLL_INTERVAL_MS);
   }
 
   protected _startCountdown(orderId: string, expireAt: number): void {
     if (this.countdownIntervalId !== undefined) window.clearInterval(this.countdownIntervalId);
+
     const updateDisplay = () => {
       const timerElement = document.getElementById('mmpay-countdown-text');
       const remaining = Math.max(0, Math.floor((expireAt - Date.now()) / 1000));
@@ -290,14 +314,20 @@ export class MMPaySDK {
       }
       return remaining;
     }
+
     let currentRemaining = updateDisplay();
+
     this.countdownIntervalId = window.setInterval(async () => {
       currentRemaining = updateDisplay();
       if (currentRemaining <= 0) {
         this._cleanup();
         this._clearCache();
         this.ui.showTerminalMessage(orderId, 'EXPIRED', '<span class="en-text">Time expired.</span>', this._getGlobalHandlers(true));
-        this._triggerEvent({expired: true, orderId});
+        this._triggerEvent({
+          expired: true,
+          orderId,
+          amount: this.pendingPaymentPayload?.amount
+        });
       }
     }, 1000);
   }

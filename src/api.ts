@@ -34,22 +34,18 @@ export class MMPayAPI {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${this.publishableKey}`
     };
-
     if (this.tokenKey) {
       headers['X-MMPay-Btoken'] = this.tokenKey;
     }
-
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'POST',
       headers,
       body: JSON.stringify(data)
     });
-
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`API Error (${response.status}): ${response.statusText}. Details: ${errorText}`);
     }
-
     return response.json() as Promise<T>;
   }
 

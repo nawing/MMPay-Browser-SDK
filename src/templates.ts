@@ -14,20 +14,20 @@ export function _getContentCancelModal(design?: IDesignOptions): string {
     </div>
     <h2 style="font-size: 1.3rem; font-weight: 700; color: var(--mmp-text-main); margin: 0 0 12px 0;">
         <span class="en-text">Cancel Transaction?</span>
-        <span class="mm-text">လွှဲပြောင်းမှုကို ပယ်ဖျက်မလား</span>
+        <span class="mm-text">လုပ်ငန်းစဉ်ကို ပယ်ဖျက်မည်လား?</span>
     </h2>
     <p style="color: var(--mmp-text-sub); margin-top: 0; margin-bottom: 32px; font-size: 0.95rem; line-height: 1.5;">
         <span class="en-text">If you haven't paid yet, you can safely cancel this process.</span>
-        <span class="mm-text">သင်သည် ငွေပေးချေမှု မပြုလုပ်ရသေးပါက လုပ်ငန်းစဉ်အား ဖျက်သိမ်းနိုင်ပါသည်။</span>
+        <span class="mm-text">ငွေမပေးချေရသေးပါက လုပ်ငန်းစဉ်ကို ဘေးကင်းစွာ ပယ်ဖျက်နိုင်ပါသည်။</span>
     </p>
     <div style="display: flex; gap: 10px; flex-direction: column;">
         <button class="mmpay-button mmpay-button-danger" onclick="MMPayCloseModal(true)">
             <span class="en-text">Stop Process</span>
-            <span class="mm-text">လုပ်ငန်းစဉ် ရပ်တန့်မည်</span>
+            <span class="mm-text">ရပ်တန့်မည်</span>
         </button>
         <button class="mmpay-button mmpay-button-secondary" onclick="MMPayReRenderModal()">
             <span class="en-text">Go Back</span>
-            <span class="mm-text">အနောက်သို့ ပြန်သွားမည်</span>
+            <span class="mm-text">နောက်သို့</span>
         </button>
     </div>
 </div>`;
@@ -42,6 +42,7 @@ export function _getContentCoreCss(design?: IDesignOptions): string {
     if (isTranslucent) {
         cardBg = isDark ? 'rgba(28, 28, 30, 0.75)' : 'rgba(255, 255, 255, 0.75)';
     }
+
     const backdrop = isTranslucent ? 'blur(20px)' : 'none';
 
     return `
@@ -67,7 +68,6 @@ export function _getContentCoreCss(design?: IDesignOptions): string {
   --mmp-fail-bg: ${isDark ? 'rgba(255, 59, 48, 0.2)' : '#fce8e6'};
   --mmp-warn-bg: ${isDark ? 'rgba(255, 149, 0, 0.2)' : '#fff4e5'};
   --mmp-close-btn-hover: ${isDark ? '#3a3a3c' : '#e5e5ea'};
-
   position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
   background-color: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   z-index: 99999; display: flex; align-items: center; justify-content: center;
@@ -110,7 +110,6 @@ export function _getContentCoreCss(design?: IDesignOptions): string {
 .mmpay-button-danger:hover { filter: brightness(0.95); box-shadow: none;}
 `;
 }
-
 
 export function _getContentQRDisplay(qrContainerId: string, merchantName: string, formattedAmount: string, apiResponse: any, design?: IDesignOptions): string {
     let customBtnStyle = '';
@@ -159,7 +158,7 @@ export function _getContentQRDisplay(qrContainerId: string, merchantName: string
           </div>
           <div class="mmpay-powered-text">
               <span class="en-text">Payment powered by MyanMyanPay</span>
-              <span class="mm-text">MyanMyanPay ဖြင့် ငွေပေးချေမှုကို ထောက်ပံ့ထားသည်</span>
+              <span class="mm-text">MyanMyanPay ဖြင့် ပေးချေပါ</span>
           </div>
           <div class="mmpay-timer-badge" id="mmpay-timer-badge">
              <svg class="mmpay-timer-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
@@ -170,27 +169,25 @@ export function _getContentQRDisplay(qrContainerId: string, merchantName: string
           </div>
           <div class="mmpay-detail-box">
               <div class="mmpay-detail">
-                  <span><span class="en-text">Order ID</span><span class="mm-text">မှာယူမှုနံပါတ်</span></span>
+                  <span><span class="en-text">Order ID</span><span class="mm-text">အော်ဒါနံပါတ်</span></span>
                   <strong>${apiResponse.orderId}</strong>
               </div>
               <div class="mmpay-detail" style="margin-top: 8px;">
-                  <span><span class="en-text">MMQR Ref No</span><span class="mm-text">ငွေပေးငွေယူနံပါတ်</span></span>
+                  <span><span class="en-text">MMQR Ref No</span><span class="mm-text">ရည်ညွှန်းနံပါတ်</span></span>
                   <strong>${apiResponse.vendorQrRefId}</strong>
               </div>
           </div>
           <button class="mmpay-button" ${customBtnStyle} onclick="MMPayDownloadQR()">
               <span class="en-text">Download QR Code</span>
-              <span class="mm-text">QR ကုဒ်ကို သိမ်းဆည်းမည်</span>
+              <span class="mm-text">QR ဒေါင်းလုဒ်လုပ်မည်</span>
           </button>
       </div>
     `;
 }
 
-
 export function _getContentAfterModal(status: 'SUCCESS' | 'FAILED' | 'EXPIRED' | 'CANCELLED', orderId: string, messageHtml: string, design?: IDesignOptions): string {
     const isSuccess = status === 'SUCCESS';
     const isCancelled = status === 'CANCELLED';
-
     const iconColor = isSuccess ? '#34c759' : (isCancelled ? '#ff9500' : '#ff3b30');
     const iconBgVar = isSuccess ? 'var(--mmp-success-bg)' : (isCancelled ? 'var(--mmp-warn-bg)' : 'var(--mmp-fail-bg)');
 
@@ -208,7 +205,7 @@ export function _getContentAfterModal(status: 'SUCCESS' | 'FAILED' | 'EXPIRED' |
         iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="${iconColor}" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>`;
     } else {
         statusTextEn = status === 'EXPIRED' ? 'Expired' : 'Failed';
-        statusTextMm = status === 'EXPIRED' ? 'အချိန်ကျော်လွန်သွားပါပြီ' : 'မအောင်မြင်ပါ';
+        statusTextMm = status === 'EXPIRED' ? 'သက်တမ်းကုန်သွားပါပြီ' : 'မအောင်မြင်ပါ';
         iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="${iconColor}" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>`;
     }
 
@@ -260,11 +257,11 @@ export function _getPreloadScreen(design?: IDesignOptions): string {
           </div>
           <div class="mmpay-preload-text">
               <span class="en-text">Securing Transaction</span>
-              <span class="mm-text">လုံခြုံသော ချိတ်ဆက်မှု</span>
+              <span class="mm-text">ချိတ်ဆက်နေပါသည်</span>
           </div>
           <div class="mmpay-preload-subtext">
               <span class="en-text">Establishing end-to-end encryption...</span>
-              <span class="mm-text">လုံခြုံရေးစနစ်များကို ချိတ်ဆက်နေသည်...</span>
+              <span class="mm-text">လုံခြုံရေး စနစ်ဖြင့် ချိတ်ဆက်နေပါသည်...</span>
           </div>
       </div>`;
 }
