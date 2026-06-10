@@ -1,6 +1,6 @@
 import {MMPayAPI} from './api';
-import {DeprecatedMMPayAPI} from './deprecated/api';
-import {legacyShowPaymentModal} from './deprecated/showPaymentModal';
+import {XMMPayAPI} from './functions/api';
+import {showPaymentModal} from './functions/showPaymentModal';
 import {
   ICreatePaymentRequestParams,
   ICreatePaymentResponse,
@@ -28,7 +28,7 @@ export class MMPaySDK {
 
   // Clean Infrastructure Dependencies
   protected api: MMPayAPI;
-  protected legacyApi: DeprecatedMMPayAPI | null = null;
+  protected xApi: XMMPayAPI | null = null;
   protected ui: MMPayUI;
 
   constructor(publishableKey: string, options: SDKOptions = {}) {
@@ -55,7 +55,7 @@ export class MMPaySDK {
       color: options.design?.color
     });
 
-    this.legacyApi = new DeprecatedMMPayAPI(this.environment, publishableKey);
+    this.xApi = new XMMPayAPI(this.environment, publishableKey);
 
     if (typeof window !== 'undefined') {
       this._checkAndAutoResume();
@@ -69,10 +69,10 @@ export class MMPaySDK {
     params: ICreatePaymentRequestParams,
     onComplete: (result: IModalEventResult) => void
   ): Promise<void> {
-    if (!this.legacyApi) {
+    if (!this.xApi) {
       throw new Error("showPaymentModal() is discontinued on the modern infrastructure. Use .pay(orderId, callback) instead.");
     }
-    return legacyShowPaymentModal.call(this, params, onComplete);
+    return showPaymentModal.call(this, params, onComplete);
   }
 
   /**

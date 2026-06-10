@@ -73,7 +73,12 @@ const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
         color: '#DE3163' // #color code
     }
 });
-MMPayApp.pay('Order-ID-111111', (result) => console.log(result))
+
+MMPayApp.pay('Order-ID-111111', (result) => {
+    if (result.success) {
+        console.log('Success: ' + result.orderId + ' : Transaction : ' + result.transactionId);
+    }
+})
 ```
 
 ---
@@ -96,6 +101,7 @@ const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
         color: '#DE3163' // #color code
     }
 });
+
 MMPayApp.showPaymentModal({
     orderId: 'Order-ID-111111',
     amount: 2800
@@ -110,6 +116,7 @@ MMPayApp.showPaymentModal({
 Do this at your backend to verify source of truth. If there are any payload manipulation that does not match your amount, the order can be 'CANCELLED' instanly via our api.
 
 ```typescript
+// Example of callback handling in the backend
 import { MMPaySDK } from 'mmpay-node-sdk';
 
 const MMPay = new MMPaySDK({
@@ -120,12 +127,28 @@ const MMPay = new MMPaySDK({
 })
 
 MMPay
-  .onTxCreate((tx: MMPayIncomingCallbackScheme) => {
+  .onTxCreate((tx) => {
     const { amount } = await DB.getOrderId(tx.orderId) // get your source of truth from your database
     if (tx.amount !== amount ) {
       await MMPay.cancel(tx.orderId) // cancel order
     }
   })
+  .onTxSuccess((tx) => console.log('Success:', tx.orderId))
+  .onTxFail((tx) => console.log('Failed:', tx.orderId))
+  .onTxRefund((tx) => console.log('Refunded:', tx.orderId))
+  .onTxCancel((tx) => console.log('Cancelled:', tx.orderId))
+  .onTxExpire((tx) => console.log('Expired:', tx.orderId))
+  .onHeartbeat((tx) => console.log('Heartbeat:', tx.orderId))
+  .on('error', (err) => console.error(err));
+
+// Listening Callback
+app.post('/webhooks/mmpay-callback', async (req: Request, res: Response) => {
+  const payload = JSON.stringify(req.body);
+  const nonce = req.headers['x-mmpay-nonce'] as string;
+  const signature = req.headers['x-mmpay-signature'] as string;
+  await MMPaySandbox.listen(payload, nonce, signature);
+  res.json({ received: true }); // please respond with 200 status
+});
 ```
 
 ---

@@ -164,15 +164,15 @@ var MMPayAPI = /** @class */ (function () {
     return MMPayAPI;
 }());
 
-var DeprecatedMMPayAPI = /** @class */ (function () {
-    function DeprecatedMMPayAPI(environment, publishableKey) {
+var XMMPayAPI = /** @class */ (function () {
+    function XMMPayAPI(environment, publishableKey) {
         this.baseUrl = 'https://ezapi.myanmyanpay.com';
         this.tokenKey = null;
         this.environment = environment;
         this.publishableKey = publishableKey;
     }
-    DeprecatedMMPayAPI.prototype.setToken = function (token) { this.tokenKey = token; };
-    DeprecatedMMPayAPI.prototype.call = function (endpoint_1) {
+    XMMPayAPI.prototype.setToken = function (token) { this.tokenKey = token; };
+    XMMPayAPI.prototype.call = function (endpoint_1) {
         return __awaiter(this, arguments, void 0, function (endpoint, data) {
             var headers, response, _a, _b;
             if (data === void 0) { data = {}; }
@@ -202,48 +202,47 @@ var DeprecatedMMPayAPI = /** @class */ (function () {
             });
         });
     };
-    DeprecatedMMPayAPI.prototype.createToken = function (payload) {
+    XMMPayAPI.prototype.createToken = function (payload) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, this.call("/xpayments/".concat(this.environment, "-token-request"), payload)];
             });
         });
     };
-    DeprecatedMMPayAPI.prototype.createPayment = function (payload) {
+    XMMPayAPI.prototype.createPayment = function (payload) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, this.call("/xpayments/".concat(this.environment, "-payment-create"), payload)];
             });
         });
     };
-    return DeprecatedMMPayAPI;
+    return XMMPayAPI;
 }());
 
 /**
- * @deprecated This method is deprecated. Please migrate to the .pay() method.
+ * @showPaymentModal
  */
-function legacyShowPaymentModal(// Binds the parent MMPaySDK instance context
+function showPaymentModal(// Binds the parent MMPaySDK instance context
 params, onComplete) {
     return __awaiter(this, void 0, void 0, function () {
         var nonce, tokenResponse, apiResponse, modernTokenResponse, actualRefId, expireAt, error_1, terminalMsg;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    console.warn("[MMPaySDK] showPaymentModal() is deprecated. Please migrate to pay(orderId, callback).");
                     this.ui.renderPreloadScreen(this._getGlobalHandlers());
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 5, , 6]);
                     nonce = new Date().getTime().toString() + '_mmp';
-                    return [4 /*yield*/, this.legacyApi.createToken({
+                    return [4 /*yield*/, this.xApi.createToken({
                             amount: params.amount,
                             orderId: params.orderId,
                             nonce: nonce
                         })];
                 case 2:
                     tokenResponse = _a.sent();
-                    this.legacyApi.setToken(tokenResponse.token);
-                    return [4 /*yield*/, this.legacyApi.createPayment(__assign(__assign({}, params), { nonce: nonce }))];
+                    this.xApi.setToken(tokenResponse.token);
+                    return [4 /*yield*/, this.xApi.createPayment(__assign(__assign({}, params), { nonce: nonce }))];
                 case 3:
                     apiResponse = _a.sent();
                     return [4 /*yield*/, this.api.createToken({
@@ -276,8 +275,8 @@ params, onComplete) {
                     return [3 /*break*/, 6];
                 case 5:
                     error_1 = _a.sent();
-                    if (this.legacyApi)
-                        this.legacyApi.setToken(null);
+                    if (this.xApi)
+                        this.xApi.setToken(null);
                     terminalMsg = "<span class=\"en-text\">".concat((error_1 === null || error_1 === void 0 ? void 0 : error_1.message) || 'Error occurred.', "</span>");
                     this.ui.showTerminalMessage(params.orderId, 'FAILED', terminalMsg, this._getGlobalHandlers(true));
                     this._triggerEvent({ failed: true, orderId: params.orderId });
@@ -511,7 +510,7 @@ var MMPaySDK = /** @class */ (function () {
         this.countdownIntervalId = undefined;
         this.pendingApiResponse = null;
         this.pendingPaymentPayload = null;
-        this.legacyApi = null;
+        this.xApi = null;
         if (!publishableKey) {
             throw new Error("A Publishable Key is required to initialize [MMPaySDK].");
         }
@@ -533,10 +532,7 @@ var MMPaySDK = /** @class */ (function () {
             mode: ((_a = options.design) === null || _a === void 0 ? void 0 : _a.mode) || 'light',
             color: (_b = options.design) === null || _b === void 0 ? void 0 : _b.color
         });
-        // Conditional Provisioning for Existing Users
-        // if (options.baseUrl === 'https://ezapi.myanmyanpay.com') {
-        // }
-        this.legacyApi = new DeprecatedMMPayAPI(this.environment, publishableKey);
+        this.xApi = new XMMPayAPI(this.environment, publishableKey);
         if (typeof window !== 'undefined') {
             this._checkAndAutoResume();
         }
@@ -547,11 +543,10 @@ var MMPaySDK = /** @class */ (function () {
     MMPaySDK.prototype.showPaymentModal = function (params, onComplete) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                if (!this.legacyApi) {
+                if (!this.xApi) {
                     throw new Error("showPaymentModal() is discontinued on the modern infrastructure. Use .pay(orderId, callback) instead.");
                 }
-                // Forward context execution to the decoupled function
-                return [2 /*return*/, legacyShowPaymentModal.call(this, params, onComplete)];
+                return [2 /*return*/, showPaymentModal.call(this, params, onComplete)];
             });
         });
     };

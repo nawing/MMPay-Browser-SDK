@@ -1,6 +1,6 @@
 import {ICreatePaymentRequestParams, ICreatePaymentResponse, ICreateTokenRequestParams, ICreateTokenResponse} from '../types';
 
-export class DeprecatedMMPayAPI {
+export class XMMPayAPI {
   private baseUrl = 'https://ezapi.myanmyanpay.com';
   private environment: 'sandbox' | 'production';
   private publishableKey: string;
