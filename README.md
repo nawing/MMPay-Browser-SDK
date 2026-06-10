@@ -30,7 +30,10 @@ const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
 });
 ```
 
-##### Step 3: 🚀 Call Pay Funtion
+##### Step 3: 🚀 Making Payments
+
+
+##### Approach 1 [Backend Site Order Creation]
 ### `pay()` (Recommended: UI + Polling)
 This function is a simple way where an MMQR Reference No and QR to be created at backend with secret key securely, and putting the order ID in our plugin to make POP UP appear in your browser.
 
@@ -74,9 +77,14 @@ MMPayApp.pay('Order-ID-111111', (result) => console.log(result))
 
 ---
 
-##### Step 3: 🚀 Show Payment Modal
-### `showPaymentModal()` (Recommended: UI + Polling)
+##### Approach 2 [Browser Site Order Creation]
+### `showPaymentModal()`
 This function is a simple way where an MMQR Reference No and QR to be created on the browser site, but you must verify the source of truth in our webhooks to avoid payload manipulation.
+
+#### **Method Signature**
+```typescript
+showPaymentModal({orderId: string, amount: number}, onComplete: Function ): Promise<void>
+```
 
 #### **Browser Plugin Implementation**
 ```javascript
