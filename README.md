@@ -158,6 +158,7 @@ MMPayApp.pay('Order-ID-111111', (result) => {
 
 ## 4: All Supported Events
 
+**Browser Plugin Implementation Display All Event Types**
 
 ```javascript
 MMPayApp.pay('Order-ID-111111', (result) => {
