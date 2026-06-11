@@ -1,25 +1,27 @@
 # MyanMyanPay Browser Plugin Or No-code SDK
-## 💳 Introduction
+
 Welcome to the **MyanMyanPay Browser Plugin No Code SDK**! This library provides a secure and seamless way to integrate QR Code and Bank Redirect payments into any e-commerce checkout flow.
 Developed using **TypeScript**, the SDK offers a clean, type-safe interface and handles complex tasks like API communication, UI rendering, and asynchronous payment status polling automatically.
 
 ---
 
 
-### 1. Code Implementation
-
-##### Step 1: 🛠️  Plugin or SDK Installation
+## 1: 🛠️  Plugin or SDK Installation
 The MyanMyanPay SDK is distributed as a single JavaScript file, ready for direct inclusion.
 Embed the following `<script>` tag into the `<head>` or before the closing `</body>` tag of your checkout page.
+
+**Implementation**
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/mmpay-browser-sdk@latest/dist/mmpay-sdk.js"></script>
 ```
 
-##### Step 2: 🚀 Initialize Your App
+---
+
+## 2: 🚀 Initialize Your App
 The `MMPaySDK` class provides two distinct methods to suit different integration needs.
 
-#### **Example Implementation**
+**Implementation**
 ```javascript
 const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
     merchantName:  'Your Shop Name',
@@ -28,71 +30,22 @@ const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
         color: '#DE3163' // #color code
     }
 });
-```
-
-##### Step 3: 🚀 Making Payments
-
-
-##### Approach 1 [Backend Site Order Creation]
-### `pay()` (Recommended: UI + Polling)
-This function is a simple way where an MMQR Reference No and QR to be created at backend with secret key securely, and putting the order ID in our plugin to make POP UP appear in your browser.
-
-#### **Method Signature**
-```typescript
-pay(orderId: string, onComplete: Function ): Promise<void>
-```
-
-### [Establishing Source of Truth] via Backend
-Do this at your backend server, it is important to create a source of truth in this manner.
-
-```bash
-npm install mmpay-node-sdk --save
-```
-
-#### **Backend Integration**
-```typescript
-import { MMPaySDK } from 'mmpay-node-sdk';
-
-const MMPay = new MMPaySDK({
-  appId: "MMxxxxxxx",
-  publishableKey: "pk_live_abcxxxxx",
-  secretKey: "sk_live_abcxxxxx",
-  apiBaseUrl: "https://xxxxxx"
-})
-
-const { qr, orderId } = await MMPay.pay({ amount, orderId });
-// get your order Id to your browser
-```
-
-#### **Browser Plugin Implementation**
-```javascript
-const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
-    merchantName:  'Your Shop Name',
-    design: {
-        mode: 'dark', // dark | dark-translucent | light | light-translucent
-        color: '#DE3163' // #color code
-    }
-});
-
-MMPayApp.pay('Order-ID-111111', (result) => {
-    if (result.success) {
-        console.log('Success: ' + result.orderId + ' : Transaction : ' + result.transactionId);
-    }
-})
 ```
 
 ---
 
-##### Approach 2 [Browser Site Order Creation]
-### `showPaymentModal()`
+## 3: 🚀 Making Payments
+
+##### Approach 1 [Browser Site Order Creation] `showPaymentModal()`
+
 This function is a simple way where an MMQR Reference No and QR to be created on the browser site, but you must verify the source of truth in our webhooks to avoid payload manipulation.
 
-#### **Method Signature**
+**Method Signature**
 ```typescript
 showPaymentModal({orderId: string, amount: number}, onComplete: Function ): Promise<void>
 ```
 
-#### **Browser Plugin Implementation**
+**Browser Plugin Implementation**
 ```javascript
 const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
     merchantName:  'Your Shop Name',
@@ -112,7 +65,7 @@ MMPayApp.showPaymentModal({
 })
 ```
 
-#### **Verifying Source of Truth**
+**Verifying Source of Truth**
 Do this at your backend to verify source of truth. If there are any payload manipulation that does not match your amount, the order can be 'CANCELLED' instanly via our api.
 
 ```typescript
@@ -151,9 +104,58 @@ app.post('/webhooks/mmpay-callback', async (req: Request, res: Response) => {
 });
 ```
 
+
+##### Approach 2 [Backend Site Order Creation] `pay()`
+
+This function is a simple way where an MMQR Reference No and QR to be created at backend with secret key securely, and putting the order ID in our plugin to make POP UP appear in your browser.
+
+**Method Signature**
+```typescript
+pay(orderId: string, onComplete: Function ): Promise<void>
+```
+
+**Establishing a Source of Truth**
+Do this at your backend server, it is important to create a source of truth in this manner.
+
+```bash
+npm install mmpay-node-sdk --save
+```
+
+**Backend Integration**
+```typescript
+import { MMPaySDK } from 'mmpay-node-sdk';
+
+const MMPay = new MMPaySDK({
+  appId: "MMxxxxxxx",
+  publishableKey: "pk_live_abcxxxxx",
+  secretKey: "sk_live_abcxxxxx",
+  apiBaseUrl: "https://xxxxxx"
+})
+
+const { qr, orderId } = await MMPay.pay({ amount, orderId });
+// get your order Id to your browser
+```
+
+**Browser Plugin Implementation**
+```javascript
+const MMPayApp = new MMPaySDK('pk_live_YOUR_KEY', {
+    merchantName:  'Your Shop Name',
+    design: {
+        mode: 'dark', // dark | dark-translucent | light | light-translucent
+        color: '#DE3163' // #color code
+    }
+});
+
+MMPayApp.pay('Order-ID-111111', (result) => {
+    if (result.success) {
+        console.log('Success: ' + result.orderId + ' : Transaction : ' + result.transactionId);
+    }
+})
+```
+
 ---
 
-#### **All Support Events**
+## 4: All Supported Events
 
 ```javascript
 MMPayApp.pay('Order-ID-111111', (result) => {
@@ -170,10 +172,25 @@ MMPayApp.pay('Order-ID-111111', (result) => {
         console.log('Expoired: ' + result.orderId);
     }
 })
+
+MMPayApp.showPaymentModal({ orderId, amount }, (result) => {
+    if (result.success) {
+        console.log('Success: ' + result.orderId + ' : Transaction : ' + result.transactionId);
+    }
+    if (result.created) {
+        console.log('Created: ' + result.orderId);
+    }
+    if (result.cancelled) {
+        console.log('Cancelled: ' + result.orderId);
+    }
+    if (result.expired) {
+        console.log('Expoired: ' + result.orderId);
+    }
+})
 ```
 ---
 
-### 2. Error Codes
+## 5: Error Codes
 
 | Code | Description |
 | :--- | :--- |
@@ -184,12 +201,11 @@ MMPayApp.pay('Order-ID-111111', (result) => {
 | **`R004`** | Origin Requires SSL |
 | **`429`** | Ratelimit hit only 1000 request / minute allowed |
 
-
 ---
 
-### 3. Angular Framework Implementation
+### 6: Angular Framework Implementation
 
-#### **Example Implementation**
+**Example Implementation**
 
 ```typescript
 import {Injectable} from '@angular/core';
@@ -250,9 +266,9 @@ export class MMPayService {
 ```
 
 
-### 4. React Framework Implementation
+### 7. React Framework Implementation
 
-#### **Example Implementation**
+**Example Implementation**
 
 ```tsx
 import React, { useEffect, useRef } from 'react';
@@ -326,9 +342,9 @@ export const Checkout = () => {
 ```
 
 
-### 5. Vue Framework Implementation
+### 8. Vue Framework Implementation
 
-#### **Example Implementation**
+**Example Implementation**
 
 ```vue
 
@@ -396,3 +412,8 @@ const handlePayment = () => {
 </template>
 
 ```
+
+
+## License
+
+MIT
