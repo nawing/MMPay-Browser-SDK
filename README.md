@@ -1,6 +1,6 @@
 # MyanMyanPay Browser Plugin Or No-code SDK
 
-Welcome to the **MyanMyanPay Browser Plugin No Code SDK**! This library provides a secure and seamless way to integrate QR Code and Bank Redirect payments into any e-commerce checkout flow.
+Welcome to the **MyanMyanPay Browser Plugin No Code SDK**! This library provides a secure and seamless way to integrate MMQR right into your webpages without any redirects.
 Developed using **TypeScript**, the SDK offers a clean, type-safe interface and handles complex tasks like API communication, UI rendering, and asynchronous payment status polling automatically.
 
 ---
@@ -66,6 +66,7 @@ MMPayApp.showPaymentModal({
 ```
 
 **Verifying Source of Truth**
+
 Do this at your backend to verify source of truth. If there are any payload manipulation that does not match your amount, the order can be 'CANCELLED' instanly via our api.
 
 ```typescript
@@ -115,6 +116,7 @@ pay(orderId: string, onComplete: Function ): Promise<void>
 ```
 
 **Establishing a Source of Truth**
+
 Do this at your backend server, it is important to create a source of truth in this manner.
 
 ```bash
