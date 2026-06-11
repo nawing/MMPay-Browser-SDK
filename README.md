@@ -155,7 +155,9 @@ MMPayApp.pay('Order-ID-111111', (result) => {
 
 ---
 
+
 ## 4: All Supported Events
+
 
 ```javascript
 MMPayApp.pay('Order-ID-111111', (result) => {
@@ -203,7 +205,7 @@ MMPayApp.showPaymentModal({ orderId, amount }, (result) => {
 
 ---
 
-### 6: Angular Framework Implementation
+## 6: Angular Framework Implementation
 
 **Example Implementation**
 
@@ -262,11 +264,12 @@ export class MMPayService {
         });
     }
 }
-
 ```
 
+---
 
-### 7. React Framework Implementation
+
+## 7. React Framework Implementation
 
 **Example Implementation**
 
@@ -341,8 +344,10 @@ export const Checkout = () => {
 };
 ```
 
+---
 
-### 8. Vue Framework Implementation
+
+## 8. Vue Framework Implementation
 
 **Example Implementation**
 
@@ -410,8 +415,9 @@ const handlePayment = () => {
         Pay with MyanMyanPay
     </button>
 </template>
-
 ```
+
+---
 
 
 ## License
