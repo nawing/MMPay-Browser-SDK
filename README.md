@@ -193,6 +193,7 @@ MMPayApp.showPaymentModal({ orderId, amount }, (result) => {
     }
 })
 ```
+
 ---
 
 ## 5: Error Codes
