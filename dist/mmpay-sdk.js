@@ -485,6 +485,7 @@
             }
             var cdnUrls = [
                 "https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js",
+                "https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"
             ];
             var currentCdnIndex = 0;
             var loadNextCdn = function () {
