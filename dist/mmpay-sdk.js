@@ -484,9 +484,7 @@
                 catch (e) { }
             }
             var cdnUrls = [
-                "https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js",
-                "https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js",
-                "https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js"
+                "https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js",
             ];
             var currentCdnIndex = 0;
             var loadNextCdn = function () {
