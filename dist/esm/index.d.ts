@@ -1,5 +1,4 @@
 import { MMPayAPI } from './api';
-import { XMMPayAPI } from './functions/api';
 import { ICreatePaymentRequestParams, IModalEventResult, IPollingRequest, SDKOptions } from './types';
 import { MMPayUI } from './ui';
 export declare class MMPaySDK {
@@ -14,7 +13,6 @@ export declare class MMPaySDK {
     private pendingApiResponse;
     private pendingPaymentPayload;
     protected api: MMPayAPI;
-    protected xApi: XMMPayAPI | null;
     protected ui: MMPayUI;
     constructor(publishableKey: string, options?: SDKOptions);
     showPaymentModal(params: ICreatePaymentRequestParams, onComplete: (result: IModalEventResult) => void): Promise<void>;
