@@ -54,28 +54,22 @@ export class MMPaySDK {
     this.onCompleteCallback = onComplete;
     this.ui.renderPreloadScreen(this._getGlobalHandlers());
     try {
-      const nonce = new Date().getTime().toString() + '_mmp';
+      const tokenNonce = new Date().getTime().toString() + '_create';
       const tokenResponse = await this.api.createToken({
         amount: params.amount,
         orderId: params.orderId,
-        nonce
+        nonce: tokenNonce
       });
       this.api.setToken(tokenResponse.token);
-      const apiResponse: any = await this.api.createPayment({...params, nonce});
-      const modernTokenResponse = await this.api.createToken({
-        amount: params.amount,
-        orderId: params.orderId,
-        nonce: nonce + '_bridge'
-      });
-      this.api.setToken(modernTokenResponse.token);
+      const apiResponse: any = await this.api.createPayment({...params, nonce: tokenNonce});
       const actualRefId = apiResponse?.vendorQrRefId || apiResponse?.transactionRefId;
       if (apiResponse && apiResponse.qr && actualRefId) {
         apiResponse.vendorQrRefId = actualRefId;
-        this.pendingPaymentPayload = {...params, nonce};
+        this.pendingPaymentPayload = {...params, tokenNonce};
         this.pendingApiResponse = apiResponse;
         const expireAt = Date.now() + 300000;
         this.ui.renderQrModalContent(apiResponse, params.orderId, this.merchantName, this._getGlobalHandlers());
-        this._startPolling({orderId: params.orderId, nonce: nonce + '_poll'});
+        this._startPolling({orderId: params.orderId, nonce: tokenNonce + '_poll'});
         this._startCountdown(params.orderId, expireAt);
         this._triggerEvent({
           created: true,
@@ -120,7 +114,7 @@ export class MMPaySDK {
     const expireAt = Date.now() + (this.TIMEOUT_SECONDS * 1000);
     try {
       const startTime = Date.now();
-      const tokenNonce = new Date().getTime().toString() + '_token';
+      const tokenNonce = new Date().getTime().toString() + '_read';
       const tokenResponse = await this.api.createToken({orderId, nonce: tokenNonce});
       this.api.setToken(tokenResponse.token);
       const apiResponse: any = await this.api.showPayment(showPayload);

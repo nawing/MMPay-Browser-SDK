@@ -425,7 +425,7 @@
         }
         MMPaySDK.prototype.showPaymentModal = function (params, onComplete) {
             return __awaiter(this, void 0, void 0, function () {
-                var nonce, tokenResponse, apiResponse, modernTokenResponse, actualRefId, expireAt, error_1, terminalMsg;
+                var tokenNonce, tokenResponse, apiResponse, actualRefId, expireAt, error_1, terminalMsg;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
@@ -433,35 +433,27 @@
                             this.ui.renderPreloadScreen(this._getGlobalHandlers());
                             _a.label = 1;
                         case 1:
-                            _a.trys.push([1, 5, , 6]);
-                            nonce = new Date().getTime().toString() + '_mmp';
+                            _a.trys.push([1, 4, , 5]);
+                            tokenNonce = new Date().getTime().toString() + '_create';
                             return [4 /*yield*/, this.api.createToken({
                                     amount: params.amount,
                                     orderId: params.orderId,
-                                    nonce: nonce
+                                    nonce: tokenNonce
                                 })];
                         case 2:
                             tokenResponse = _a.sent();
                             this.api.setToken(tokenResponse.token);
-                            return [4 /*yield*/, this.api.createPayment(__assign(__assign({}, params), { nonce: nonce }))];
+                            return [4 /*yield*/, this.api.createPayment(__assign(__assign({}, params), { nonce: tokenNonce }))];
                         case 3:
                             apiResponse = _a.sent();
-                            return [4 /*yield*/, this.api.createToken({
-                                    amount: params.amount,
-                                    orderId: params.orderId,
-                                    nonce: nonce + '_bridge'
-                                })];
-                        case 4:
-                            modernTokenResponse = _a.sent();
-                            this.api.setToken(modernTokenResponse.token);
                             actualRefId = (apiResponse === null || apiResponse === void 0 ? void 0 : apiResponse.vendorQrRefId) || (apiResponse === null || apiResponse === void 0 ? void 0 : apiResponse.transactionRefId);
                             if (apiResponse && apiResponse.qr && actualRefId) {
                                 apiResponse.vendorQrRefId = actualRefId;
-                                this.pendingPaymentPayload = __assign(__assign({}, params), { nonce: nonce });
+                                this.pendingPaymentPayload = __assign(__assign({}, params), { tokenNonce: tokenNonce });
                                 this.pendingApiResponse = apiResponse;
                                 expireAt = Date.now() + 300000;
                                 this.ui.renderQrModalContent(apiResponse, params.orderId, this.merchantName, this._getGlobalHandlers());
-                                this._startPolling({ orderId: params.orderId, nonce: nonce + '_poll' });
+                                this._startPolling({ orderId: params.orderId, nonce: tokenNonce + '_poll' });
                                 this._startCountdown(params.orderId, expireAt);
                                 this._triggerEvent({
                                     created: true,
@@ -473,8 +465,8 @@
                             else {
                                 throw new Error("Invalid API Response: Missing QR Data.");
                             }
-                            return [3 /*break*/, 6];
-                        case 5:
+                            return [3 /*break*/, 5];
+                        case 4:
                             error_1 = _a.sent();
                             if (this.api)
                                 this.api.setToken(null);
@@ -485,8 +477,8 @@
                                 orderId: params.orderId,
                                 amount: params.amount
                             });
-                            return [3 /*break*/, 6];
-                        case 6: return [2 /*return*/];
+                            return [3 /*break*/, 5];
+                        case 5: return [2 /*return*/];
                     }
                 });
             });
@@ -522,7 +514,7 @@
                         case 1:
                             _a.trys.push([1, 6, , 7]);
                             startTime = Date.now();
-                            tokenNonce = new Date().getTime().toString() + '_token';
+                            tokenNonce = new Date().getTime().toString() + '_read';
                             return [4 /*yield*/, this.api.createToken({ orderId: orderId, nonce: tokenNonce })];
                         case 2:
                             tokenResponse = _a.sent();

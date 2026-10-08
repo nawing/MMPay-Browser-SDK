@@ -23,7 +23,6 @@ export default {
     typescript({
       tsconfig: './tsconfig.json',
       compilerOptions: {
-        // This stops Rollup from fighting with tsc over declaration outputs
         outDir: 'dist',
         declaration: false,
         declarationMap: false,
